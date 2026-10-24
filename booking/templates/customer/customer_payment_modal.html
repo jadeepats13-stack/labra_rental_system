@@ -1,0 +1,47 @@
+{% load static %}
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_payment_modal.css' %}">
+
+</head>
+<div class="modal-overlay" id="paymentModal">
+    <div class="modal">
+        <div class="modal-title">Complete Payment</div>
+
+        <div class="summary-card" id="paymentSummary">
+            <div class="summary-row"><span class="label">Booking ID</span><span class="value" id="sum-booking">#—</span>
+            </div>
+            <div class="summary-row"><span class="label">Court</span><span class="value" id="sum-court">—</span>
+            </div>
+            <div class="summary-row"><span class="label">Date</span><span class="value" id="sum-date">—</span></div>
+            <div class="summary-row"><span class="label">Time</span><span class="value" id="sum-time">—</span></div>
+            <div class="summary-row total"><span class="label">Total Amount</span><span class="value"
+                    id="sum-total">₱0.00</span></div>
+        </div>
+
+        <form method="POST" action="{% url 'process_payment' %}" id="cashPaymentForm">
+            {% csrf_token %}
+            <input type="hidden" name="booking_id" id="pay-booking-id">
+            <input type="hidden" name="payment_method" value="Cash">
+
+            <label class="form-label" style="margin-bottom:10px; display:block;">Payment Method</label>
+            <div class="payment-methods">
+                <label class="payment-method" onclick="selectPayMethod(this)">
+                    <input type="radio" name="payment_method" value="Cash" style="display:none;" required>
+                    <span class="payment-method-name">Cash</span>
+                </label>
+                <label class="payment-method" onclick="selectPayMethod(this)">
+                    <input type="radio" name="payment_method" value="Online" style="display:none;">
+                    <span class="payment-method-name">Online Payment</span>
+                </label>
+            </div>
+
+            <div id="dashboard-paypal-container" style="display:none; margin: 16px 0;"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closePaymentModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="dashboard-pay-btn">Confirm Payment</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,122 @@
+.page-content {
+    display: none;
+    padding: 32px;
+    animation: fadeSlideIn 0.4s ease;
+}
+
+.page-content.active {
+    display: block;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: var(--orange);
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.table-wrap {
+    background: var(--dark);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    margin-bottom: 28px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.data-table thead tr {
+    background: var(--dark-3);
+    border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.data-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--orange);
+    font-weight: 700;
+}
+
+.data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--gray-light);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr:hover td {
+    background: rgba(249, 115, 22, 0.04);
+    color: var(--white);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    color: var(--gray);
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .page-content {
+        padding: 16px;
+    }
+
+    .table-wrap {
+        cursor: grab;
+        overflow-x: scroll !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        white-space: nowrap;
+        padding: 12px 10px;
+    }
+}

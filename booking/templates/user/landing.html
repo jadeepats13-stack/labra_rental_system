@@ -1,0 +1,245 @@
+{% load static %}
+{% load booking_extras %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labra Basketball Court – Book the LA Court</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/user/landing.css' %}">
+</head>
+
+<body>
+    <!-- ── Navigation ───────────────────────────────────────────── -->
+    <header class="nav" id="top">
+        <a class="brand" href="#top">Labra <span>Basketball Court</span></a>
+        <nav class="nav-links" id="navLinks" aria-label="Main">
+            <a href="#court">The court</a>
+            <a href="#how">How it works</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <div class="nav-actions">
+            {% if logged_in_admin %}
+            <a class="btn btn-solid" href="{% url 'admin_dashboard' %}">Admin panel</a>
+            {% elif logged_in_customer %}
+            <a class="btn btn-solid" href="{% url 'customer_dashboard' %}">My dashboard</a>
+            {% else %}
+            <button type="button" class="btn btn-ghost" data-auth="login">Log in</button>
+            <button type="button" class="btn btn-solid" data-auth="register">Sign up</button>
+            {% endif %}
+            <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false"
+                aria-controls="navLinks"><span></span><span></span><span></span></button>
+        </div>
+    </header>
+
+    <!-- ── Hero ─────────────────────────────────────────────────── -->
+    <section class="hero">
+        <img class="hero-photo" src="{% static 'images/dronview.png' %}" alt="Aerial view of the LA court at Labra Basketball Court">
+        <div class="hero-inner">
+            <div class="hero-copy">
+                <h1>Book the LA Court<br>by the hour.</h1>
+                <p>An outdoor court in Zone 7, Tambacan, Iligan City. Pick a free time, pay online or in cash,
+                    and check in at the court with your QR code.</p>
+                <div class="hero-cta">
+                    {% if logged_in_customer %}
+                    <a class="btn btn-solid btn-lg" href="{% url 'customer_dashboard' %}">Book a time</a>
+                    {% else %}
+                    <button type="button" class="btn btn-solid btn-lg" data-auth="register">Book a time</button>
+                    {% endif %}
+                    <a class="btn btn-ghost btn-lg" href="#how">How it works</a>
+                </div>
+            </div>
+
+            <!-- Today at the court: live from the booking database + OpenWeatherMap -->
+            <aside class="scoreboard" aria-label="Today at the LA Court">
+                <div class="sb-title">Today at the LA Court</div>
+                <div class="sb-row">
+                    <span class="sb-label">Free time left</span>
+                    <span class="sb-value">{% if court and court.court_status == 'Available' %}{{ free_today|hours }}<small> of {{ open_hours_per_day }} hrs</small>{% else %}<small>Closed for maintenance</small>{% endif %}</span>
+                </div>
+                <div class="sb-row">
+                    <span class="sb-label">Weather</span>
+                    <span class="sb-value sb-weather">
+                        {% if today_weather %}
+                        <img src="{{ today_weather.icon_url }}" alt="">{{ today_weather.temperature }}°<small>{{ today_weather.description|lower }}</small>
+                        {% else %}
+                        <small>Forecast unavailable</small>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="sb-row">
+                    <span class="sb-label">Rate</span>
+                    <span class="sb-value">₱{{ court.rate_per_hour|default:200|floatformat:0 }}<small> per hour</small></span>
+                </div>
+                <div class="sb-row">
+                    <span class="sb-label">Open</span>
+                    <span class="sb-value">8 AM – 10 PM</span>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- ── How it works (a real sequence, so it is numbered) ───────── -->
+    <section class="section" id="how">
+        <h2>How booking works</h2>
+        <ol class="steps">
+            <li>
+                <h3>Create an account</h3>
+                <p>Sign up with your name, username and email. It takes a minute.</p>
+            </li>
+            <li>
+                <h3>Pick a free time</h3>
+                <p>See which hours are open this week, with the weather forecast for each day.</p>
+            </li>
+            <li>
+                <h3>Pay</h3>
+                <p>Pay online with PayPal, or pay in cash at the court before you play.</p>
+            </li>
+            <li>
+                <h3>Show your QR code</h3>
+                <p>Your booking email has a QR code. Staff scan it and your playing time starts.</p>
+            </li>
+        </ol>
+    </section>
+
+    <!-- ── The court ─────────────────────────────────────────────── -->
+    <section class="section court" id="court">
+        <div class="court-text">
+            <h2>One court, painted for the game</h2>
+            <p>The LA Court is an outdoor court surrounded by trees in Tambacan. Bookings are for the whole
+                court, in 30-minute steps between 8:00 AM and 10:00 PM.</p>
+            <dl class="facts">
+                <div><dt>Rate</dt><dd>₱{{ court.rate_per_hour|default:200|floatformat:0 }} / hour</dd></div>
+                <div><dt>Hours</dt><dd>8:00 AM – 10:00 PM</dd></div>
+                <div><dt>Address</dt><dd>Zone 7, Tambacan, Iligan City</dd></div>
+            </dl>
+        </div>
+        <div class="gallery">
+            <img class="g-main" src="{% static 'images/court3.jpg' %}" alt="The LA court seen from above">
+            <img src="{% static 'images/side.jpg' %}" alt="The LA court from the side, with the hoop">
+            <img src="{% static 'images/dob.png' %}" alt="Players on the LA court">
+        </div>
+    </section>
+
+    <!-- ── Contact ───────────────────────────────────────────────── -->
+    <section class="section contact" id="contact">
+        <div>
+            <h2>Questions?</h2>
+            <p class="contact-lines">
+                Zone 7, Tambacan Street, Iligan City<br>
+                +63 912 345 6789<br>
+                labracourt@gmail.com
+            </p>
+        </div>
+        <form id="contact-form" class="contact-form">
+            <label>Name<input type="text" name="user_name" required></label>
+            <label>Email<input type="email" name="user_email" required></label>
+            <label>Message<textarea name="message" rows="4" required></textarea></label>
+            <button type="submit" class="btn btn-solid">Send message</button>
+        </form>
+    </section>
+
+    <footer class="footer">
+        <span>Labra Basketball Court Rental System</span>
+        <span>© 2026</span>
+    </footer>
+
+    <!-- ── Log in / Sign up pop-up ──────────────────────────────── -->
+    <div class="auth-overlay" id="authModal" data-open="{{ auth_tab }}" hidden>
+        <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+            <button type="button" class="auth-close" id="authClose" aria-label="Close">×</button>
+            <h2 class="auth-title" id="authTitle">Welcome back</h2>
+
+            <div class="auth-tabs" role="tablist">
+                <button type="button" class="auth-tab" data-tab="login" role="tab">Log in</button>
+                <button type="button" class="auth-tab" data-tab="register" role="tab">Sign up</button>
+            </div>
+
+            {% if messages %}
+            <div class="auth-messages">
+                {% for message in messages %}
+                <p class="auth-msg {{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Log in -->
+            <form class="auth-form" data-panel="login" method="POST" action="{% url 'login' %}" novalidate>
+                {% csrf_token %}
+                <label class="field">
+                    <span>Username or email</span>
+                    <input type="text" name="username" id="loginIdentifier" autocomplete="username"
+                        value="{{ auth_form.identifier|default:'' }}" required>
+                    <small class="field-error" id="loginIdentifierError"></small>
+                </label>
+                <label class="field">
+                    <span>Password</span>
+                    <div class="pw-wrap">
+                        <input type="password" name="password" autocomplete="current-password" required>
+                        <button type="button" class="pw-toggle" aria-label="Show password">Show</button>
+                    </div>
+                </label>
+                <button type="submit" class="btn btn-solid btn-block">Log in</button>
+                <p class="auth-switch">New here? <button type="button" data-tab-link="register">Create an account</button></p>
+            </form>
+
+            <!-- Sign up -->
+            <form class="auth-form" data-panel="register" method="POST" action="{% url 'register' %}" novalidate>
+                {% csrf_token %}
+                <div class="field-row">
+                    <label class="field"><span>First name</span>
+                        <input type="text" name="firstname" autocomplete="given-name" value="{{ auth_form.firstname|default:'' }}" required>
+                    </label>
+                    <label class="field"><span>Last name</span>
+                        <input type="text" name="lastname" autocomplete="family-name" value="{{ auth_form.lastname|default:'' }}" required>
+                    </label>
+                </div>
+                <label class="field"><span>Username</span>
+                    <input type="text" name="username" autocomplete="username" value="{{ auth_form.username|default:'' }}" required>
+                </label>
+                <label class="field"><span>Email</span>
+                    <input type="email" name="email" id="registerEmail" autocomplete="email"
+                        value="{{ auth_form.email|default:'' }}" placeholder="name@gmail.com" required>
+                    <small class="field-error" id="registerEmailError"></small>
+                </label>
+                <div class="field-row">
+                    <label class="field"><span>Password</span>
+                        <input type="password" name="password" id="registerPassword" autocomplete="new-password" required>
+                    </label>
+                    <label class="field"><span>Confirm password</span>
+                        <input type="password" name="confirm_password" id="registerConfirm" autocomplete="new-password" required>
+                    </label>
+                </div>
+                <small class="field-error" id="registerPasswordError"></small>
+                <button type="submit" class="btn btn-solid btn-block">Create account</button>
+                <p class="auth-switch">Already have an account? <button type="button" data-tab-link="login">Log in</button></p>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/user/landing.js' %}?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+        (function () {
+            if (window.emailjs) emailjs.init("sg2NZyNrWExpAOvee");
+        })();
+
+        document.getElementById("contact-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (!window.emailjs) { alert("Failed to send message. Try again."); return; }
+            emailjs.sendForm("service_lcf7euq", "template_pdev7yt", this)
+                .then(function () {
+                    alert("Message sent successfully!");
+                }, function (error) {
+                    alert("Failed to send message. Try again.");
+                    console.log(error);
+                });
+        });
+    </script>
+</body>
+
+</html>

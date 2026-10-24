@@ -1,0 +1,824 @@
+/* Customer features: availability calendar, dashboard cards, reminders,
+   Add to Google Calendar, search bars. Uses the existing customer colours
+   (--orange, --dark, --dark-2, --dark-3, --white, --gray, --gray-light). */
+
+.btn-sm {
+    padding: 7px 14px;
+    font-size: 12px;
+    border-radius: 8px;
+}
+
+/* ── Shared card ── */
+.lb-card {
+    background: var(--dark);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 20px 22px;
+}
+
+.lb-card-label {
+    font-size: 11px;
+    color: var(--gray-light);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* ── Reminder banners ── */
+.reminders {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.reminder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    color: var(--white);
+}
+
+.reminder.reminder-muted {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--gray-light);
+}
+
+.reminder a,
+.reminder button.link {
+    color: var(--orange);
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* ── Next Game + LA Court row ── */
+.dash-top-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.next-game {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-color: rgba(249, 115, 22, 0.25);
+}
+
+.next-game-when {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    letter-spacing: 1px;
+    color: var(--white);
+    line-height: 1.1;
+}
+
+.next-game-countdown {
+    color: var(--orange);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.next-game-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 13px;
+    color: var(--gray-light);
+}
+
+.next-game-meta strong {
+    color: var(--white);
+    font-weight: 600;
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.status-pill.approved { color: #22c55e; border-color: rgba(34, 197, 94, 0.35); }
+.status-pill.pending { color: #eab308; border-color: rgba(234, 179, 8, 0.35); }
+
+.next-game-weather {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--dark-2);
+    font-size: 13px;
+    color: var(--white);
+}
+
+.next-game-weather img {
+    width: 40px;
+    height: 40px;
+    margin: -6px 0;
+}
+
+.next-game-weather.rain {
+    border: 1px solid rgba(234, 179, 8, 0.35);
+}
+
+.next-game-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.next-game-empty {
+    color: var(--gray-light);
+    font-size: 14px;
+}
+
+/* ── Your next game: ticket card ── */
+.ticket {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    background: var(--dark);
+    border: 1px solid rgba(249, 115, 22, 0.28);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* Date stub, separated by a perforated edge like a game ticket */
+.ticket-stub {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 8px;
+    background: var(--orange);
+    color: #1a0d03;
+    text-align: center;
+    border-right: 2px dashed rgba(10, 10, 10, 0.55);
+}
+
+.ticket-stub::before,
+.ticket-stub::after {
+    content: '';
+    position: absolute;
+    right: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--black);
+}
+
+.ticket-stub::before { top: -8px; }
+.ticket-stub::after { bottom: -8px; }
+
+.ticket-dow,
+.ticket-month {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+.ticket-day {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    line-height: 0.9;
+}
+
+.ticket-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 22px 20px;
+    min-width: 0;
+}
+
+.ticket-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ticket-title {
+    margin: 0;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-light);
+}
+
+.ticket-chips {
+    display: flex;
+    gap: 6px;
+}
+
+.status-pill.paid { color: #22c55e; border-color: rgba(34, 197, 94, 0.35); }
+.status-pill.unpaid { color: var(--orange-light); border-color: rgba(249, 115, 22, 0.4); }
+
+.ticket-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    letter-spacing: 1px;
+    line-height: 1;
+    color: var(--white);
+    margin-top: 2px;
+}
+
+.ticket-countdown {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--orange);
+}
+
+.ticket-muted {
+    color: var(--gray-light);
+    font-weight: 400;
+}
+
+.ticket-facts {
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    gap: 4px 28px;
+    margin: 12px 0 4px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ticket-facts dt {
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 2px;
+}
+
+.ticket-facts dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+}
+
+.ticket-weather dd {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ticket-weather img {
+    width: 36px;
+    height: 36px;
+    margin: -8px -4px -8px -8px;
+}
+
+.ticket-weather small {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-light);
+}
+
+.ticket-weather.rain small {
+    color: #eab308;
+}
+
+.ticket-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-top: 10px;
+}
+
+.ticket-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--gray-light);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.ticket-link:hover,
+.ticket-link:focus-visible {
+    color: var(--orange);
+}
+
+.ticket-empty .ticket-stub {
+    background: var(--dark-3);
+    color: var(--gray);
+}
+
+/* Weather always gets its own line under the booking facts */
+.ticket-weather {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+}
+
+#myBookingsTable .action-btns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 600px) {
+    .ticket {
+        grid-template-columns: 1fr;
+    }
+    .ticket-stub {
+        flex-direction: row;
+        gap: 10px;
+        padding: 12px;
+        border-right: none;
+        border-bottom: 2px dashed rgba(10, 10, 10, 0.55);
+    }
+    .ticket-stub::before,
+    .ticket-stub::after {
+        top: auto;
+        bottom: -9px;
+    }
+    .ticket-stub::before { left: -8px; right: auto; }
+    .ticket-stub::after { right: -8px; }
+    .ticket-day {
+        font-size: 40px;
+    }
+    .ticket-time {
+        font-size: 32px;
+    }
+    .ticket-facts {
+        grid-template-columns: repeat(2, auto);
+        gap: 10px 20px;
+    }
+}
+
+/* LA Court card */
+.la-court-card {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.la-court-card img {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    display: block;
+}
+
+.la-court-body {
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.la-court-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--white);
+}
+
+.la-court-rate {
+    color: var(--orange);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.la-court-rate span {
+    color: var(--gray);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.la-court-free {
+    font-size: 13px;
+    color: var(--gray-light);
+}
+
+/* ── This Week strip ── */
+.week-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.week-day {
+    background: var(--dark);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--white);
+    font: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: var(--transition);
+}
+
+.week-day:hover,
+.week-day:focus-visible {
+    border-color: rgba(249, 115, 22, 0.5);
+    outline: none;
+}
+
+.week-day.today {
+    border-color: rgba(249, 115, 22, 0.35);
+}
+
+.week-day-name {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+    font-weight: 600;
+}
+
+.week-day-date {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+.week-day-weather {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    min-height: 32px;
+    color: var(--white);
+}
+
+.week-day-weather img {
+    width: 32px;
+    height: 32px;
+}
+
+.week-day-weather.none {
+    color: var(--gray);
+    font-size: 11px;
+}
+
+.week-day-free {
+    font-size: 11px;
+    color: var(--gray-light);
+}
+
+.free-bar {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border: none;
+    border-radius: 4px;
+    background: var(--dark-3);
+    overflow: hidden;
+}
+
+.free-bar::-webkit-progress-bar {
+    background: var(--dark-3);
+    border-radius: 4px;
+}
+
+.free-bar::-webkit-progress-value {
+    background: var(--orange);
+    border-radius: 4px;
+}
+
+.free-bar::-moz-progress-bar {
+    background: var(--orange);
+    border-radius: 4px;
+}
+
+/* ── Availability calendar (Book Court) ── */
+.avail-card {
+    margin-bottom: 24px;
+}
+
+.avail-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.avail-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--gray-light);
+}
+
+.avail-legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: -1px;
+}
+
+.avail-notice {
+    display: none;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    color: var(--white);
+}
+
+.avail-hint {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--gray);
+}
+
+#availCalendar {
+    --fc-border-color: rgba(255, 255, 255, 0.07);
+    --fc-page-bg-color: var(--dark);
+    --fc-neutral-bg-color: var(--dark-2);
+    --fc-today-bg-color: rgba(249, 115, 22, 0.06);
+    --fc-now-indicator-color: var(--orange);
+    --fc-button-bg-color: var(--dark-2);
+    --fc-button-border-color: rgba(255, 255, 255, 0.1);
+    --fc-button-text-color: var(--white);
+    --fc-button-hover-bg-color: var(--dark-3);
+    --fc-button-hover-border-color: rgba(249, 115, 22, 0.4);
+    --fc-button-active-bg-color: var(--orange);
+    --fc-button-active-border-color: var(--orange);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+}
+
+#availCalendar .fc-toolbar-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+#availCalendar .fc-button {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    box-shadow: none;
+}
+
+#availCalendar .fc-col-header-cell-cushion {
+    color: var(--white);
+    text-decoration: none;
+    padding: 6px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+#availCalendar .fc-timegrid-slot-label-cushion {
+    color: var(--gray-light);
+    font-size: 11px;
+}
+
+#availCalendar .fc-timegrid-slot {
+    height: 26px;
+    cursor: pointer;
+}
+
+#availCalendar .fc-timegrid-slot:hover {
+    background: rgba(249, 115, 22, 0.05);
+}
+
+#availCalendar .fc-event {
+    cursor: default;
+    font-size: 11px;
+    border-radius: 6px;
+}
+
+.cal-day-name {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+}
+
+.cal-day-num {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.cal-day-weather {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: var(--gray-light);
+    min-height: 26px;
+}
+
+.cal-day-weather img {
+    width: 26px;
+    height: 26px;
+}
+
+/* ── Booked times in dropdowns ── */
+select.form-control option:disabled {
+    color: #52525b;
+}
+
+/* ── Search bars on customer tables ── */
+.page-content .table-filter {
+    padding: 0 0 14px;
+}
+
+.page-content .table-filter .form-control {
+    padding: 9px 12px;
+    font-size: 13px;
+}
+
+.page-content .table-filter-nomatch td {
+    color: var(--gray-light);
+}
+
+@media (max-width: 1100px) {
+    .week-strip {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .dash-top-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .week-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .next-game-when {
+        font-size: 24px;
+    }
+    .reminder {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ── Check-in QR (My Bookings, ticket card) ── */
+.btn-qr {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(249, 115, 22, 0.45);
+    background: transparent;
+    color: var(--orange);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-qr:hover,
+.btn-qr:focus-visible {
+    background: rgba(249, 115, 22, 0.1);
+    outline: none;
+}
+
+.ticket-code {
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1px;
+}
+
+.ticket-live {
+    color: #22c55e;
+}
+
+.ticket-live-left {
+    font-variant-numeric: tabular-nums;
+}
+
+.qr-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.qr-modal[hidden] {
+    display: none;
+}
+
+.qr-modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: var(--dark);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.qr-modal-card h2 {
+    margin: 0;
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+}
+
+.qr-when {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--gray-light);
+}
+
+.qr-modal-card img {
+    width: 240px;
+    height: 240px;
+    max-width: 100%;
+    background: #fff;
+    border-radius: 12px;
+    padding: 6px;
+}
+
+.qr-code-label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--gray);
+}
+
+.qr-code {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    color: var(--white);
+    line-height: 1;
+    user-select: all;
+}
+
+.qr-note {
+    margin: 4px 0 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--gray-light);
+}
+
+/* ── Sidebar badges ── */
+.nav-item .nav-badge[hidden] { display: none; }
+
+.nav-item .nav-badge {
+    margin-left: auto;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--orange);
+    color: #140a02;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}

@@ -1,0 +1,109 @@
+{% load static %}
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_sideba.css' %}">
+</head>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-mark">
+            <div class="logo-text">
+                <strong>Labra</strong>
+                <span>Court Rental</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-user">
+        <div class="user-avatar">
+            {% if customer.profile_picture %}
+            <img src="{{ customer.profile_picture.url }}" alt="Avatar">
+            {% else %}
+            {{ customer.firstname|first }}{{ customer.lastname|first }}
+            {% endif %}
+        </div>
+        <div class="user-info">
+            <strong>{{ customer.firstname }} {{ customer.lastname }}</strong>
+            <span>@{{ customer.username }}</span>
+        </div>
+    </div>
+
+    <div class="sidebar-nav">
+        <div class="nav-label">Overview</div>
+        <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('dashboard')">
+            Dashboard
+        </a>
+        <a class="nav-item {% if active_page == 'book' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('book')">
+            Book Court
+        </a>
+
+        <div class="nav-label">Activities</div>
+        <a class="nav-item {% if active_page == 'bookings' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('bookings')">
+            Bookings
+        </a>
+        <a class="nav-item {% if active_page == 'history' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('history')">
+            Booking History
+        </a>
+        <a class="nav-item {% if active_page == 'payment' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('payment')">
+            Payment
+        </a>
+
+        <div class="nav-label">Account</div>
+        <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="javascript:void(0)"
+            onclick="showPage('profile')">
+            Edit Profile
+        </a>
+        <a class="nav-item logout" href="{% url 'logout' %}">
+            Logout
+        </a>
+    </div>
+</nav>
+
+<script>
+    (function () {
+        const toggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('visible');
+            toggle.classList.add('open');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('visible');
+            toggle.classList.remove('open');
+        }
+
+        toggle.addEventListener('click', function () {
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                if (window.innerWidth <= 768) closeSidebar();
+            });
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) closeSidebar();
+        });
+    })();
+</script>

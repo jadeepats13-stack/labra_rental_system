@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labra Basketball Court Rental</title>
+    <link rel="stylesheet" href="{% static 'css/user/login.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Oswald:wght@200&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <div id="loginMessages"
+        data-messages="{% for message in messages %}{{ message }}{% if not forloop.last %}|{% endif %}{% endfor %}">
+    </div>
+    <div class="background"> <img src="{% static 'images/c1.png' %}" alt="Basketball Court"> </div>
+    <div class="login-container" id="loginForm">
+        <div class="system-title"> Labra Basketball Court Rental </div>
+        <h2>Login</h2>
+        <form method="POST" action="{% url 'login' %}"> {% csrf_token %} <div class="input-group">
+                <label>Username</label> <input type="text" name="username" required>
+            </div>
+            <div class="input-group"> <label>Password</label> <input type="password" name="password" required> </div>
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+        <div class="register-link"> Don't have an account? <a href="#" onclick="showRegister()">Create an account</a>
+        </div>
+    </div>
+    <div class="register-container" id="registerForm">
+        <div class="system-title"> Labra Basketball Court Rental </div>
+        <h2>Register</h2>
+        <form method="POST" action="{% url 'register' %}"> {% csrf_token %} <div class="input-group">
+                <label>Firstname</label> <input type="text" name="firstname" required>
+            </div>
+            <div class="input-group"> <label>Lastname</label> <input type="text" name="lastname" required> </div>
+            <div class="input-group"> <label>Username</label> <input type="text" name="username" required> </div>
+            <div class="input-group"> <label>Email</label> <input type="email" name="email" required> </div>
+            <div class="input-group"> <label>Password</label> <input type="password" name="password" required> </div>
+            <div class="input-group"> <label>Confirm Password</label> <input type="password" name="confirm_password"
+                    required> </div> <button type="submit" class="register-btn">Register</button>
+        </form>
+        <div class="login-link"> Already have an account? <a href="#" onclick="showLogin()">Login here</a> </div>
+    </div>
+    <div id="loginMessageModal" class="modal">
+        <div class="modal-content"> <span class="close" id="closeModal">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+
+    <!-- <div id="loginMessages" data-messages="{% for message in messages %}{{ message }}{% if not forloop.last %}|{% endif %}{% endfor %}"> </div> -->
+    <script src="{% static 'js/user/login.js' %}"></script>
+</body>
+
+</html>

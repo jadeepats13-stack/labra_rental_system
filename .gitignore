@@ -1,0 +1,24 @@
+# Virtual environment
+rentalsys-env/
+venv/
+.venv/
+
+# Secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local database and uploaded files
+db.sqlite3
+media/
+
+# Static files collected for deployment
+staticfiles/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

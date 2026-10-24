@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard – Labra Basketball Court Rental</title>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_dashboar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_book_court.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_confirmation.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_history.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_payment.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_payment_modal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_profile.css' %}">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap">
+</head>
+
+<body>
+    {% include 'customer/customer_sidebar.html' %}
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="page-title">Customer <span>Dashboard</span></div>
+            <div class="top-bar-right">
+                <div class="date-badge" id="currentDate"></div>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div style="padding: 16px 32px 0;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="page-content active" id="page-dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Bookings</div>
+                    <div class="stat-value">{{ total_bookings }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Bookings</div>
+                    <div class="stat-value">{{ active_bookings }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value">₱{{ total_spent|floatformat:0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unpaid Bills</div>
+                    <div class="stat-value">{{ unpaid_count }}</div>
+                </div>
+            </div>
+            <div class="section-header">
+                <div class="section-title">Recent Bookings</div>
+                <button class="btn btn-outline btn-sm" onclick="showPage('bookings')">View All</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Court</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                        <tr>
+                            <td>#{{ booking.booking_id }}</td>
+                            <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                            <td>{{ booking.booking_date }}</td>
+                            <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                            <td>₱{{ booking.total_price }}</td>
+                            <td>
+                                <span>{{ booking.booking_status }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">No bookings yet. Book a court to get started!</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="section-header">
+                <div class="section-title">Court Availability</div>
+                <button class="btn btn-primary btn-sm" onclick="showPage('book')">Book Now</button>
+            </div>
+            <div class="courts-grid">
+                {% for court in courts %}
+                <div class="court-card {{ court.court_status|lower }}">
+                    <div class="court-thumb">
+                        {% if court.court_image %}
+                        <img src="{{ court.court_image.url }}" alt="{{ court.court_name|default:'Court' }}">
+                        {% else %}
+                        <img src="{% static 'images/side.jpg' %}" alt="{{ court.court_name|default:'Court' }}">
+                        {% endif %}
+                    </div>
+                    <div style="padding:14px;">
+                        <div class="court-id" style="font-size:13px; margin-bottom:4px;">
+                            {{ court.court_name|default:'Court' }}
+                        </div>
+                        <div class="court-rate">₱{{ court.rate_per_hour|default:0|floatformat:2 }}</div>
+                        <div class="court-rate-label">Per Hour</div>
+                        <span class="badge badge-{{ court.court_status|lower }}">{{ court.court_status }}</span>
+                        {% if court.court_status == 'Available' %}
+                        <div style="margin-top:14px;">
+                            <button class="btn btn-primary btn-sm" onclick="selectCourt('{{ court.court_id }}')">
+                                Book This Court
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state-text">No courts found.</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% include 'customer/customer_book_court.html' %}
+        {% include 'customer/customer_bookings.html' %}
+        {% include 'customer/customer_booking_history.html' %}
+        {% include 'customer/customer_payment.html' %}
+        {% include 'customer/customer_payment_modal.html' %}
+        {% include 'customer/customer_profile.html' %}
+        <script>
+            const dashboardData = { csrfToken: "{{ csrf_token }}" };
+        </script>
+        <script
+            src="https://www.paypal.com/sdk/js?client-id=BAAA7G0GrqAIQjYHzMO0OlAkAPLMoUaSkqTdoM0akdAOrgWKu3pXIAuqFNt74KUh-umLzDdvFCRL7fZGz8&currency=PHP"></script>
+        <script src="{% static 'js/customer/customer_dashboar.js' %}"></script>
+        <script src="{% static 'js/customer/customer_book_court.js' %}"></script>
+        <script src="{% static 'js/customer/customer_payment.js' %}"></script>
+</body>
+
+</html>

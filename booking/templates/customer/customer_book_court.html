@@ -1,0 +1,133 @@
+{% load static %}
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_book_cour.css' %}">
+</head>
+<div class="page-content" id="page-book">
+    <div class="section-header">
+        <div class="section-title">Book the LA Court</div>
+    </div>
+
+    <div class="lb-card avail-card">
+        <div class="avail-head">
+            <div class="lb-card-label" style="margin:0;">LA Court availability</div>
+            <div class="avail-legend">
+                <span><i style="background:#3f3f46;"></i>Booked</span>
+                <span><i style="background:#f97316;"></i>Your booking</span>
+                <span><i style="background:transparent; border:1px solid rgba(255,255,255,0.25);"></i>Free: tap to book</span>
+            </div>
+        </div>
+        <div class="avail-notice" id="availNotice"></div>
+        <div id="availCalendar" data-url="{% url 'customer_availability' %}"></div>
+        <div class="avail-hint">Tap an empty time to fill in the form below. Weather data by OpenWeatherMap.</div>
+    </div>
+
+    <div class="book-layout">
+        <div class="book-form-col">
+            <form method="POST" action="{% url 'book_court' %}" id="bookingForm">
+                {% csrf_token %}
+                <div class="form-card">
+
+                    {% with court_obj=courts.0 %}
+                    {% if court_obj and court_obj.court_status == 'Available' %}
+                    {# Single LA court: no picker needed, the court is sent automatically #}
+                    <input type="hidden" name="court_id" id="courtSelect" value="{{ court_obj.court_id }}"
+                        data-rate="{{ court_obj.rate_per_hour|default:0|floatformat:2 }}"
+                        data-name="{{ court_obj.court_name|default:'LA Court' }}"
+                        data-img="{% if court_obj.court_image %}{{ court_obj.court_image.url }}{% else %}{% static 'images/side.jpg' %}{% endif %}">
+                    {% else %}
+                    <input type="hidden" name="court_id" id="courtSelect" value="">
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <div class="price-display">The LA court is currently under maintenance. Booking is unavailable.</div>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <label class="form-label">Booking Date</label>
+                        <input type="date" name="booking_date" id="bookingDate" class="form-control" required
+                            min="{{ today }}">
+                    </div>
+                    <div class="form-grid" style="margin-bottom:20px;">
+                        <div class="form-group">
+                            <label class="form-label">Start Time</label>
+                            <select name="start_time" id="startTime" class="form-control" required>
+                                <option value="">— Start —</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Time</label>
+                            <select name="end_time" id="endTime" class="form-control" required>
+                                <option value="">— End —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:24px;">
+                        <label class="form-label">Total Price</label>
+                        <div class="price-display" id="priceDisplay">
+                            <span id="priceText">Select date &amp; time to compute</span>
+                        </div>
+                        <input type="hidden" name="total_price" id="totalPriceInput" value="0">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:24px;">
+                        <label class="form-label">Weather Forecast</label>
+                        <div class="price-display" id="weatherBox" data-url="{% url 'weather_forecast' %}"
+                            style="display:flex; align-items:center; gap:10px;">
+                            <img id="weatherIcon" src="" alt="" style="width:40px; height:40px; display:none;">
+                            <span id="weatherText" style="font-size:14px;">Select date &amp; start time to see the forecast</span>
+                        </div>
+                        <small style="color:var(--gray); font-size:11px;">Weather data by OpenWeatherMap</small>
+                    </div>
+
+                    <div style="display:flex; gap:12px;">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            Confirm Booking
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="resetBookingForm()">Reset</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+        <div class="book-preview-col">
+            <div class="court-preview-card" id="courtPreviewCard">
+                <div class="preview-empty" id="previewEmpty">
+                    <div style="font-size:14px; color:var(--gray);">The LA court is not available for booking right now</div>
+                </div>
+                <div class="preview-filled" id="previewFilled" style="display:none;">
+                    <div class="court-img-wrap">
+                        <img id="previewImg" src="" alt="Court Image">
+                        <div class="court-img-overlay">
+
+                        </div>
+                    </div>
+                    <div class="preview-info">
+                        <div class="preview-court-name" id="previewName">—</div>
+                        <div class="preview-rate-row">
+                            <span class="preview-rate-value" id="previewRate">₱0</span>
+                            <span class="preview-rate-label">/ hour</span>
+                        </div>
+                        <div class="booking-breakdown" id="bookingBreakdown" style="display:none;">
+                            <div class="breakdown-row">
+                                <span>Date</span>
+                                <strong id="bdDate">—</strong>
+                            </div>
+                            <div class="breakdown-row">
+                                <span>Duration</span>
+                                <strong id="bdDuration">—</strong>
+                            </div>
+                            <div class="breakdown-row">
+                                <span>Time</span>
+                                <strong id="bdTime">—</strong>
+                            </div>
+                            <div class="breakdown-row total-row">
+                                <span>Total</span>
+                                <strong id="bdTotal">₱0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

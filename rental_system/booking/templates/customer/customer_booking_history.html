@@ -1,0 +1,94 @@
+{% load static %}
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_histor.css' %}">
+</head>
+<div class="page-content" id="page-history">
+    <div class="section-header">
+        <div class="section-title">Booking History</div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Court</th>
+                    <th>Date</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Total</th>
+                    <th>Payment Method</th>
+                    <th>Payment Status</th>
+                    <th>Booking Status</th>
+                    <th>Liabilities</th>
+                    <th>Liabilities Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in booking_history %}
+                <tr>
+                    <td>#{{ booking.booking_id }}</td>
+                    <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                    <td>{{ booking.booking_date }}</td>
+                    <td>{{ booking.start_time|time:"H:i" }}</td>
+                    <td>{{ booking.end_time|time:"H:i" }}</td>
+                    <td>₱{{ booking.total_price }}</td>
+                    <td>
+                        {% if booking.payment %}
+                        {{ booking.payment.payment_method|default:"—" }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if booking.payment %}
+                        <span>{{ booking.payment.payment_status }}</span>
+                        {% else %}
+                        <span>Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span>{{ booking.booking_status }}</span>
+                    </td>
+                    <td>
+                        {% if booking.damage_set.all %}
+                        {% for damage in booking.damage_set.all %}
+                        {% if damage.fee == 0 %}
+                        None
+                        {% else %}
+                        ₱{{ damage.fee }}
+                        {% endif %}
+                        {% endfor %}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if booking.damage_set.all %}
+                        {% for damage in booking.damage_set.all %}
+                        {% if damage.fee == 0 %}
+                        No Damage
+                        {% else %}
+                        {{ damage.status }}
+                        {% endif %}
+                        {% endfor %}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11">
+                        <div class="empty-state">
+                            <div class="empty-state-text">No booking history yet.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="{% static 'js/customer/customer_booking_histor.js' %}"></script>

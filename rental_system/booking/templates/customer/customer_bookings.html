@@ -1,0 +1,90 @@
+{% load static %}
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking.css' %}">
+
+</head>
+<div class="page-content" id="page-bookings">
+    <div class="section-header">
+        <div class="section-title">My Bookings</div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Court</th>
+                    <th>Date</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Total Price</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in active_booking_list %}
+                <tr>
+                    <td>#{{ booking.booking_id }}</td>
+                    <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                    <td>{{ booking.booking_date }}</td>
+                    <td>{{ booking.start_time|time:"H:i" }}</td>
+                    <td>{{ booking.end_time|time:"H:i" }}</td>
+                    <td>₱{{ booking.total_price }}</td>
+                    <td>
+                        {% if booking.payment %}
+                        <span>{{booking.payment.payment_status }}</span>
+                        {% else %}
+                        <span>Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span>{{ booking.booking_status }}</span>
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            {% if booking.booking_status == 'Pending' or booking.booking_status == 'Approved' %}
+
+                            {% if not booking.payment or booking.payment.payment_status == 'Unpaid' %}
+                            <button class="btn-pay pay-now-btn" data-id="{{ booking.booking_id }}"
+                                data-court="{{ booking.court.court_name|default:'LA Court' }}" data-date="{{ booking.booking_date }}"
+                                data-start="{{ booking.start_time|time:'H:i' }}"
+                                data-end="{{ booking.end_time|time:'H:i' }}" data-total="{{ booking.total_price }}">
+                                Pay Now
+                            </button>
+                            {% endif %}
+
+                            <form method="POST" action="{% url 'cancel_booking' booking.booking_id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-cancel"
+                                    onclick="return confirm('Cancel booking #{{ booking.booking_id }}?')">
+                                    Cancel
+                                </button>
+                            </form>
+
+                            {% else %}
+                            <span class="no-action">—</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <div class="empty-state-text">No active bookings found.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="{% static 'js/customer/customer_payment_moda.js' %}"></script>
+
+</body>
+
+</html>

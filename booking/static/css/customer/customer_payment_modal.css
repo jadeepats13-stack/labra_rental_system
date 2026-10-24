@@ -1,0 +1,190 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.modal-overlay.open {
+    display: flex;
+    animation: fadeIn 0.25s ease;
+}
+
+.modal {
+    background: var(--dark-2);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: slideUp 0.25s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ── TITLE ── */
+.modal-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 18px;
+}
+
+/* ── SUMMARY CARD ── */
+.summary-card {
+    background: var(--dark);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 13px;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-row .label {
+    color: var(--gray-light);
+    font-weight: 500;
+}
+
+.summary-row .value {
+    color: var(--white);
+    font-weight: 600;
+    text-align: right;
+}
+
+.summary-row.total {
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(249, 115, 22, 0.2);
+    border-bottom: none;
+}
+
+.summary-row.total .label {
+    color: var(--orange);
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-row.total .value {
+    color: var(--orange);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+/* ── PAYMENT METHOD LABEL ── */
+.form-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ── PAYMENT METHODS ── */
+.payment-methods {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.payment-method {
+    flex: 1;
+    background: var(--dark);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-method:hover {
+    border-color: rgba(249, 115, 22, 0.4);
+}
+
+.payment-method.selected {
+    border-color: var(--orange);
+    background: rgba(249, 115, 22, 0.08);
+}
+
+.payment-method-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+}
+
+/* ── PAYPAL CONTAINER ── */
+#dashboard-paypal-container {
+    margin-bottom: 12px;
+}
+
+/* ── MODAL ACTIONS ── */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.modal-actions .btn {
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: 'Barlow', sans-serif;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

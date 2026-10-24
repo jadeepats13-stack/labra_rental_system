@@ -1,0 +1,290 @@
+{% load static %}
+{% load booking_extras %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard – Labra Basketball Court Rental</title>
+    <link rel="stylesheet" href="{% static 'css/customer/customer_dashboar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_book_court.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_confirmation.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_history.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_payment.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_payment_modal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_profile.css' %}">
+    <link rel="stylesheet" href="{% static 'css/common/table_filter.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_features.css' %}">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap">
+</head>
+
+<body>
+    {% include 'customer/customer_sidebar.html' %}
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="page-title">Customer <span>Dashboard</span></div>
+            <div class="top-bar-right">
+                <div class="date-badge" id="currentDate"></div>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div style="padding: 16px 32px 0;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="page-content active" id="page-dashboard">
+            {# ── Reminders (only shown when they apply) ── #}
+            {% if unpaid_active or missing_email %}
+            <div class="reminders">
+                {% if unpaid_active %}
+                <div class="reminder">
+                    <span>You have <strong>{{ unpaid_active }}</strong> unpaid booking{{ unpaid_active|pluralize }}.</span>
+                    <button type="button" class="link" onclick="showPage('bookings')">Pay now</button>
+                </div>
+                {% endif %}
+                {% if missing_email %}
+                <div class="reminder">
+                    <span>Add your email address to receive booking confirmation emails.</span>
+                    <button type="button" class="link" onclick="showPage('profile')">Edit Profile</button>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {# ── This week at the LA Court ── #}
+            <div class="section-header">
+                <div class="section-title">This week at the LA Court</div>
+                <button class="btn btn-outline btn-sm" onclick="showPage('book')">Full calendar</button>
+            </div>
+            <div class="week-strip">
+                {% for day in week_overview %}
+                <button type="button" class="week-day{% if forloop.first %} today{% endif %}"
+                    onclick="openBookingOn('{{ day.iso }}')"
+                    aria-label="Book on {{ day.date|date:'l, F j' }}: {{ day.free_hours|hours }} of {{ open_hours_per_day }} hours free">
+                    <span class="week-day-name">{% if forloop.first %}Today{% else %}{{ day.date|date:"D" }}{% endif %}</span>
+                    <span class="week-day-date">{{ day.date|date:"M j" }}</span>
+                    {% if day.weather %}
+                    <span class="week-day-weather" title="{{ day.weather.description }}, {{ day.weather.rain_chance }}% chance of rain">
+                        <img src="{{ day.weather.icon_url }}" alt="{{ day.weather.description }}">{{ day.weather.temperature }}°
+                    </span>
+                    {% else %}
+                    <span class="week-day-weather none">No forecast yet</span>
+                    {% endif %}
+                    <progress class="free-bar" max="100" value="{{ day.percent_free }}" aria-hidden="true"></progress>
+                    <span class="week-day-free">{{ day.free_hours|hours }} of {{ open_hours_per_day }} hrs free</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Bookings</div>
+                    <div class="stat-value">{{ total_bookings }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Bookings</div>
+                    <div class="stat-value">{{ active_bookings }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value">₱{{ total_spent|floatformat:0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unpaid Bills</div>
+                    <div class="stat-value">{{ unpaid_count }}</div>
+                </div>
+            </div>
+            {# ── Your Next Game + LA Court ── #}
+            <div class="dash-top-row">
+                {% if next_game %}
+                {% with g=next_game.booking %}
+                <article class="ticket" aria-label="Your next game">
+                    <div class="ticket-stub">
+                        <span class="ticket-dow">{{ g.booking_date|date:"D" }}</span>
+                        <span class="ticket-day">{{ g.booking_date|date:"j" }}</span>
+                        <span class="ticket-month">{{ g.booking_date|date:"M" }}</span>
+                    </div>
+                    <div class="ticket-body">
+                        <div class="ticket-top">
+                            <h2 class="ticket-title">Your next game</h2>
+                            <div class="ticket-chips">
+                                <span class="status-pill {{ g.booking_status|lower }}">{{ g.booking_status }}</span>
+                                <span class="status-pill {% if next_game.paid %}paid{% else %}unpaid{% endif %}">{% if next_game.paid %}Paid{% else %}Unpaid{% endif %}</span>
+                            </div>
+                        </div>
+
+                        <div class="ticket-time">{{ g.start_time|time:"g:i A" }} – {{ g.end_time|time:"g:i A" }}</div>
+                        {% if next_game.in_session %}
+                        <div class="ticket-countdown ticket-live" data-ends="{{ next_game.ends_at }}" data-now="{% now 'c' %}">
+                            Playing now · <span class="ticket-live-left">--:--:--</span> left
+                        </div>
+                        {% else %}
+                        <div class="ticket-countdown">Starts {{ next_game.countdown }}</div>
+                        {% endif %}
+
+                        <dl class="ticket-facts">
+                            <div><dt>Booking</dt><dd>#{{ g.booking_id }}</dd></div>
+                            <div><dt>Court</dt><dd>{{ g.court.court_name|default:'LA Court' }}</dd></div>
+                            <div><dt>Total</dt><dd>₱{{ g.total_price }}</dd></div>
+                            {% if next_game.code %}
+                            <div><dt>Confirmation ID</dt><dd class="ticket-code">{{ next_game.code }}</dd></div>
+                            {% endif %}
+                            <div class="ticket-weather{% if next_game.weather.rain_warning %} rain{% endif %}">
+                                <dt>Weather</dt>
+                                {% if next_game.weather.available %}
+                                <dd>
+                                    <img src="{{ next_game.weather.icon_url }}" alt="">
+                                    <span>{{ next_game.weather.temperature }}°C, {{ next_game.weather.description|lower }}
+                                        <small>{{ next_game.weather.rain_chance }}% chance of rain{% if next_game.weather.rain_warning %}: rain likely on the outdoor court{% elif next_game.weather.rain_possible %}: light rain possible{% endif %}</small>
+                                    </span>
+                                </dd>
+                                {% else %}
+                                <dd class="ticket-muted">{{ next_game.weather.message }}</dd>
+                                {% endif %}
+                            </div>
+                        </dl>
+
+                        <div class="ticket-actions">
+                            {% if not next_game.paid %}
+                            <button class="btn btn-primary btn-sm pay-now-btn" data-id="{{ g.booking_id }}"
+                                data-court="{{ g.court.court_name|default:'LA Court' }}" data-date="{{ g.booking_date }}"
+                                data-start="{{ g.start_time|time:'H:i' }}" data-end="{{ g.end_time|time:'H:i' }}"
+                                data-total="{{ g.total_price }}">Pay ₱{{ g.total_price }}</button>
+                            {% endif %}
+                            {% if next_game.code and not next_game.in_session %}
+                            <button type="button" class="btn btn-outline btn-sm" data-qr-open data-status="{{ g.booking_status }}"
+                                data-code="{{ next_game.code }}" data-qr="{{ next_game.qr_url }}" data-id="{{ g.booking_id }}"
+                                data-when="{{ g.booking_date|date:'D, M j' }} · {{ g.start_time|time:'g:i A' }} – {{ g.end_time|time:'g:i A' }}"
+                                data-paid="{% if next_game.paid %}1{% else %}0{% endif %}">Show check-in QR</button>
+                            {% endif %}
+                            <button type="button" class="ticket-link" onclick="showPage('bookings')">View my bookings</button>
+                        </div>
+                    </div>
+                </article>
+                {% endwith %}
+                {% else %}
+                <article class="ticket ticket-empty" aria-label="Your next game">
+                    <div class="ticket-stub"><span class="ticket-day">–</span></div>
+                    <div class="ticket-body">
+                        <h2 class="ticket-title">Your next game</h2>
+                        <div class="ticket-time">No game booked yet</div>
+                        <div class="ticket-countdown ticket-muted">Pick a free time on the LA Court calendar.</div>
+                        <div class="ticket-actions">
+                            <button class="btn btn-primary btn-sm" onclick="showPage('book')">Book the LA Court</button>
+                        </div>
+                    </div>
+                </article>
+                {% endif %}
+
+                <div class="lb-card la-court-card">
+                    {% if la_court %}
+                    {% if la_court.court_image %}
+                    <img src="{{ la_court.court_image.url }}" alt="LA Court">
+                    {% else %}
+                    <img src="{% static 'images/side.jpg' %}" alt="LA Court">
+                    {% endif %}
+                    <div class="la-court-body">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                            <div class="la-court-name">{{ la_court.court_name|default:'LA Court' }}</div>
+                            <span class="badge badge-{{ la_court.court_status|lower }}">{{ la_court.court_status }}</span>
+                        </div>
+                        <div class="la-court-rate">₱{{ la_court.rate_per_hour|floatformat:2 }} <span>/ hour</span></div>
+                        {% if la_court.court_status == 'Available' %}
+                        <div class="la-court-free">{{ court_free_today|hours }} of {{ open_hours_per_day }} hours free today</div>
+                        <div><button class="btn btn-primary btn-sm" onclick="showPage('book')">Book now</button></div>
+                        {% else %}
+                        <div class="la-court-free">Under maintenance: booking is paused.</div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="la-court-body"><div class="la-court-free">No court record found.</div></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">Recent Bookings</div>
+                <button class="btn btn-outline btn-sm" onclick="showPage('bookings')">View All</button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Court</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                        <tr>
+                            <td>#{{ booking.booking_id }}</td>
+                            <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                            <td>{{ booking.booking_date }}</td>
+                            <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                            <td>₱{{ booking.total_price }}</td>
+                            <td>
+                                <span>{{ booking.booking_status }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-text">No bookings yet. Book a court to get started!</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% include 'customer/customer_book_court.html' %}
+        {% include 'customer/customer_bookings.html' %}
+        {% include 'customer/customer_booking_history.html' %}
+        {% include 'customer/customer_payment.html' %}
+        {% include 'customer/customer_payment_modal.html' %}
+        {% include 'customer/customer_profile.html' %}
+
+        {# ── Check-in QR modal (opened from the ticket card or My Bookings) ── #}
+        <div class="qr-modal" id="qrModal" hidden>
+            <div class="qr-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+                <h2 id="qrModalTitle">Check-in QR</h2>
+                <p class="qr-when" id="qrWhen"></p>
+                <img id="qrImage" src="" alt="QR code for this booking" width="240" height="240">
+                <div class="qr-code-label">Booking Confirmation ID</div>
+                <div class="qr-code" id="qrCode"></div>
+                <p class="qr-note" id="qrNote">Show this to the staff at Labra Basketball Court when you arrive. If the QR doesn't scan, they can type the ID.</p>
+                <button type="button" class="btn btn-primary btn-sm" id="qrClose">Done</button>
+            </div>
+        </div>
+        <script>
+            const dashboardData = { csrfToken: "{{ csrf_token }}" };
+        </script>
+        <script
+            src="https://www.paypal.com/sdk/js?client-id=BAAA7G0GrqAIQjYHzMO0OlAkAPLMoUaSkqTdoM0akdAOrgWKu3pXIAuqFNt74KUh-umLzDdvFCRL7fZGz8&currency=PHP"></script>
+        <script src="{% static 'js/customer/customer_dashboar.js' %}"></script>
+        <script src="{% static 'js/customer/customer_book_court.js' %}?v=3"></script>
+        <script src="{% static 'vendor/fullcalendar/index.global.min.js' %}"></script>
+        <script src="{% static 'js/common/table_filter.js' %}"></script>
+        <script src="{% static 'js/customer/customer_availability.js' %}"></script>
+        <script src="{% static 'js/customer/customer_checkin.js' %}"></script>
+        <script src="{% static 'js/customer/customer_payment.js' %}"></script>
+</body>
+
+</html>
