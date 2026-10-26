@@ -1,66 +1,88 @@
+/* "Complete Payment" pop-up on the customer dashboard. Tokens come from customer_base.css. */
+
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    z-index: var(--z-modal);
     display: none;
-    justify-content: center;
     align-items: center;
-    z-index: 1000;
-    padding: 16px;
+    justify-content: center;
+    padding: var(--space-4);
+    background: var(--scrim);
 }
 
 .modal-overlay.open {
     display: flex;
-    animation: fadeIn 0.25s ease;
+    animation: overlayIn 0.2s ease;
 }
 
 .modal {
-    background: var(--dark-2);
-    border: 1px solid rgba(249, 115, 22, 0.2);
-    border-radius: 16px;
-    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    max-width: 420px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    animation: slideUp 0.25s ease;
-    max-height: 90vh;
+    max-width: 460px;
+    max-height: calc(100dvh - 32px);
     overflow-y: auto;
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.2s var(--ease-out);
 }
 
-/* ── TITLE ── */
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
 .modal-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 20px;
+    font-family: var(--font-condensed);
+    font-size: 22px;
     font-weight: 700;
-    color: var(--white);
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 18px;
+    color: var(--text);
 }
 
-/* ── SUMMARY CARD ── */
+.modal-x {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.modal-x:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+
 .summary-card {
-    background: var(--dark);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 18px;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    margin-bottom: var(--space-5);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
 }
 
 .summary-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    font-size: 13px;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
 }
 
 .summary-row:last-child {
@@ -68,123 +90,131 @@
 }
 
 .summary-row .label {
-    color: var(--gray-light);
-    font-weight: 500;
+    color: var(--text-muted);
 }
 
 .summary-row .value {
-    color: var(--white);
     font-weight: 600;
+    color: var(--text);
     text-align: right;
 }
 
-.summary-row.total {
-    padding-top: 10px;
-    margin-top: 4px;
-    border-top: 1px solid rgba(249, 115, 22, 0.2);
-    border-bottom: none;
-}
-
 .summary-row.total .label {
-    color: var(--orange);
-    font-weight: 700;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: var(--text);
 }
 
 .summary-row.total .value {
-    color: var(--orange);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 1px;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--orange-text);
 }
 
-/* ── PAYMENT METHOD LABEL ── */
-.form-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--gray-light);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 10px;
+.pay-fieldset {
+    min-width: 0;
+    margin-bottom: var(--space-4);
+    border: 0;
 }
 
-/* ── PAYMENT METHODS ── */
+.pay-fieldset .form-label {
+    float: left;
+    width: 100%;
+    margin-bottom: var(--space-2);
+}
+
+.pay-fieldset .payment-methods {
+    clear: both;
+}
+
 .payment-methods {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
 }
 
 .payment-method {
-    flex: 1;
-    background: var(--dark);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 12px 10px;
-    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition);
+}
+
+.payment-method .icon {
+    margin-bottom: var(--space-1);
+    color: var(--text-muted);
 }
 
 .payment-method:hover {
-    border-color: rgba(249, 115, 22, 0.4);
+    border-color: var(--orange-border);
+}
+
+.payment-method:focus-within {
+    outline: 2px solid var(--orange-text);
+    outline-offset: 2px;
 }
 
 .payment-method.selected {
+    background: var(--orange-soft);
     border-color: var(--orange);
-    background: rgba(249, 115, 22, 0.08);
+}
+
+.payment-method.selected .icon {
+    color: var(--orange-text);
 }
 
 .payment-method-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.payment-method-desc {
     font-size: 13px;
-    font-weight: 600;
-    color: var(--white);
+    color: var(--text-muted);
 }
 
-/* ── PAYPAL CONTAINER ── */
 #dashboard-paypal-container {
-    margin-bottom: 12px;
+    margin-bottom: var(--space-3);
 }
 
-/* ── MODAL ACTIONS ── */
 .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 4px;
+    flex-wrap: wrap;
+    gap: var(--space-2);
 }
 
-.modal-actions .btn {
-    padding: 9px 20px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    font-family: 'Barlow', sans-serif;
+@keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-@keyframes fadeIn {
+@keyframes modalIn {
     from {
         opacity: 0;
+        transform: translateY(8px) scale(0.98);
     }
 
     to {
         opacity: 1;
+        transform: none;
     }
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
+@media (max-width: 640px) {
+    .modal {
+        padding: var(--space-5);
     }
 
-    to {
-        transform: translateY(0);
-        opacity: 1;
+    .modal-actions .btn {
+        flex: 1 1 auto;
     }
 }

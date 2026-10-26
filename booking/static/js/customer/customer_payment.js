@@ -70,23 +70,17 @@ function selectPayMethod(el) {
                 if (result.status === 'COMPLETED') {
                     closePaymentModal();
 
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'alert alert-success';
-                    alertDiv.textContent = 'Payment completed successfully via PayPal!';
-                    alertDiv.style.margin = '16px 32px 0';
-                    const content = document.querySelector('.main-content');
-                    if (content) content.insertBefore(alertDiv, content.children[1]);
-
-                    setTimeout(function () {
-                        alertDiv.style.transition = 'opacity 0.6s ease';
-                        alertDiv.style.opacity = '0';
-                        setTimeout(function () { alertDiv.remove(); }, 600);
-                    }, 4000);
-
-                    const payNowBtn = document.querySelector(`.pay-now-btn[data-id="${dashboardBookingId}"]`);
-                    if (payNowBtn) {
-                        payNowBtn.closest('.action-btns').innerHTML = '<span style="font-size:12px; color:#22c55e; font-weight:600;">Paid</span>';
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash('Payment completed successfully via PayPal!', 'success');
                     }
+
+                    // The row's Pay button is replaced by a Paid label
+                    document.querySelectorAll(`.pay-now-btn[data-id="${dashboardBookingId}"]`).forEach(function (payNowBtn) {
+                        const paid = document.createElement('span');
+                        paid.className = 'status-pill paid';
+                        paid.textContent = 'Paid';
+                        payNowBtn.replaceWith(paid);
+                    });
                     showPage('bookings');
                 }
             },

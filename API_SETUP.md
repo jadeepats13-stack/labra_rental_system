@@ -187,8 +187,8 @@ Manage Bookings, Manage Customers, Payments, Damage Reports and Booking Records 
   2. **Enter ID** by typing the Confirmation ID. Dashes and capital letters are optional.
 - **Start playing time** starts a countdown that ends at the **reserved end time**, even if the customer arrives late.
 - A booking can be started only **once**. This is enforced in the database, so two staff scanning at the same moment can't both start it.
-- **End early**: if the customer finishes early, staff end the session. The booking becomes Completed and the rest of the slot becomes free to book.
-- When the time runs out, the booking is marked **Completed** automatically.
+- **End early**: if the customer finishes early, staff click **End playing time now**. The countdown stops, the booking shows **Time ended**, and the rest of the slot becomes free to book.
+- When the time runs out (or is ended early), staff click **Complete** in Manage Bookings. Complete only appears after the playing time has ended.
 
 **Check-in rules**
 - Approved bookings only, on the booking date.
@@ -201,7 +201,39 @@ Manage Bookings, Manage Customers, Payments, Damage Reports and Booking Records 
 3. As the customer, open **Show check-in QR**. The QR image comes from goQR.me.
 4. As admin, open **Check-in**, then **Scan QR → Start camera**, and hold the QR (on your phone) up to the webcam. The details appear. Click **Start playing time**: a countdown appears under *Court in use*.
 5. Type the same ID under **Enter ID**. You should see "Already checked in… playing now", and the booking cannot be started twice.
-6. Click **End early → End playing time now**. The booking becomes Completed.
+6. Click **End early → End playing time now**. A short message appears, then Manage Bookings opens with the booking showing **Time ended** and a **Complete** button.
 7. Repeat with an **unpaid** booking to see the block and **Record cash payment**.
 
 The browser asks for camera permission the first time. Cameras work on `http://127.0.0.1:8000` and on https sites such as PythonAnywhere.
+
+## 10. Landing page chatbot (Google Gemini, external API #6)
+
+**How it works**
+- A chat bubble (**Ask us**) on the landing page opens **Labra Assistant**.
+- **Quick buttons** (Free today?, Rate, How to book, Hours, Weather, Location, Payment, Check-in, Contact) answer instantly from our own data. No AI is used, so they always work.
+- **Typed questions** go to Google Gemini from our server, together with the court's live facts (rate, hours, free times for 7 days, weather, how booking works). Gemini replies in the visitor's language: English, Tagalog or Bisaya. It is told to use only those facts and never invent prices, rules or free times.
+- If Gemini is not set up, fails, or the free quota is used up, the chatbot answers with built-in replies instead.
+- The API key is only used on the server and never appears on the page.
+
+**Setup**
+1. Open https://aistudio.google.com/apikey and sign in with a Google account. Click **Create API key** (free, no credit card).
+2. Add these lines to `.env`:
+   ```
+   GEMINI_API_KEY=your-key
+   GEMINI_MODEL=gemini-flash-lite-latest
+   ```
+3. Restart the server.
+
+**Limits (change them in .env)**
+- `CHATBOT_HOURLY_LIMIT=20`: typed questions per visitor per hour. Quick buttons are not limited.
+- `CHATBOT_DAILY_AI_LIMIT=200`: AI answers per day for the whole site, so the free quota is not used up. After that, built-in answers are used.
+
+**Test it**
+1. Open the landing page, click **Ask us**, then tap **Rate**. It shows your court's rate.
+2. Type `Magkano po kada oras?` or `Naa pa bay bakante karon?`. Gemini replies in the same language.
+3. To test the fallback, remove `GEMINI_API_KEY` from `.env` and restart: typed questions still get built-in answers.
+
+**Free tier notes**
+- Google gives a small free daily quota that changes over time. Check your limits in AI Studio.
+- On the free tier, Google may use chat messages to improve its products, so the chatbot never asks visitors for personal information.
+- If PythonAnywhere is used for hosting, `generativelanguage.googleapis.com` is allowed for free accounts (`.googleapis.com` is on its allowlist).

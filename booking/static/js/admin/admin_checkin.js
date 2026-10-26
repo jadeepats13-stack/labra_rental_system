@@ -5,8 +5,9 @@
  *   1. Scan the customer's QR with the camera (html5-qrcode library, local)
  *   2. Type the Booking Confirmation ID (e.g. LBC-7K3P-9Q2X)
  * After a successful check, "Start playing time" starts the countdown,
- * which always ends at the reserved end time. The server prevents a
- * booking from being started twice.
+ * which ends at the reserved end time (or when staff click "End playing
+ * time now"). Then staff mark the booking Completed in Manage Bookings.
+ * The server prevents a booking from being started twice.
  */
 (function () {
     let current = null;          // last verified booking summary
@@ -79,7 +80,7 @@
                 row('Reserved time', escapeHtml(b.time)) +
                 row('Payment', (b.paid ? '<span class="ci-paid">Paid</span>' : '<span class="ci-unpaid">Unpaid</span>') +
                     ' · ₱' + escapeHtml(b.total)) +
-                row('Status', escapeHtml(b.status) + (b.checked_in_at ? ' · checked in at ' + escapeHtml(b.checked_in_at) +
+                row('Status', escapeHtml(b.stage || b.status) + (b.checked_in_at ? ' · checked in at ' + escapeHtml(b.checked_in_at) +
                     (b.checked_in_by ? ' by ' + escapeHtml(b.checked_in_by) : '') : '')) +
                 '</dl>';
 
@@ -301,10 +302,29 @@
                 busy = false;
                 closeModal('ciEndModal');
                 ending = null;
+                if (data.ok && data.reason === 'ended') {
+                    showEnded(data);          // short pop-up, then Manage Bookings
+                    return;
+                }
                 showResult(data);
                 loadSessions();
             })
             .catch(function () { busy = false; closeModal('ciEndModal'); networkError(); });
+    }
+
+    // Pop-up after "End playing time now", then open Manage Bookings
+    function goToBookings(bookingId) {
+        try { sessionStorage.setItem('labra_highlight_booking', String(bookingId)); } catch (e) { /* ignore */ }
+        history.replaceState(null, '', window.location.pathname + '#bookings');
+        window.location.reload();             // fresh list with the Complete button
+    }
+
+    function showEnded(data) {
+        const id = data.booking ? data.booking.booking_id : '';
+        el('ciEndedMessage').textContent = data.message;
+        openModal('ciEndedModal');
+        el('ciEndedGo').onclick = function () { goToBookings(id); };
+        setTimeout(function () { goToBookings(id); }, 2500);
     }
 
     function tick() {
@@ -320,7 +340,7 @@
                 expired = true;
             }
         });
-        if (expired) setTimeout(loadSessions, 1500);   // server marks it Completed
+        if (expired) setTimeout(loadSessions, 1500);   // it now waits for Complete in Manage Bookings
     }
 
     // ── Wire up ────────────────────────────────────────────────────

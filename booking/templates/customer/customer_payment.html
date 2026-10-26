@@ -1,15 +1,12 @@
 {% load static %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_payment.css' %}">
-</head>
-<div class="page-content" id="page-payment">
-    <div class="section-header">
-        <div class="section-title">Payments</div>
+<section class="page-content" id="page-payment" tabindex="-1" aria-labelledby="paymentTitle">
+    <div class="page-intro">
+        <h2 class="section-title" id="paymentTitle">Payments</h2>
+        <p>Every payment on your bookings to pay for a booking.</p>
     </div>
 
     <div class="table-filter" data-table="myPaymentsTable">
-        <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or payment #">
+        <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or payment #" aria-label="Search payments">
         <select class="form-control" data-filter="status" aria-label="Payment status"><option value="">Status: All</option><option value="Paid">Paid</option><option value="Unpaid">Unpaid</option></select>
         <select class="form-control" data-filter="method" aria-label="Payment method"><option value="">Method: All</option><option value="Cash">Cash</option><option value="Online">Online</option></select>
         <span data-filter="count"></span>
@@ -19,9 +16,9 @@
         <table class="data-table" id="myPaymentsTable">
             <thead>
                 <tr>
-                    <th>Payment ID</th>
-                    <th>Booking ID</th>
-                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Booking</th>
+                    <th class="num">Amount</th>
                     <th>Date</th>
                     <th>Payment Method</th>
                     <th>Payment Status</th>
@@ -32,14 +29,14 @@
                 <tr data-search="{{ payment.payment_id }} {{ payment.booking.booking_id }}" data-status="{{ payment.payment_status }}" data-method="{{ payment.payment_method }}">
                     <td>#{{ payment.payment_id }}</td>
                     <td>#{{ payment.booking.booking_id }}</td>
-                    <td>₱{{ payment.payment_amount }}</td>
+                    <td class="num mono">₱{{ payment.payment_amount }}</td>
                     <td>{{ payment.payment_date }}</td>
                     <td>{{ payment.payment_method|default:"—" }}</td>
-                    <td><span>{{ payment.payment_status}}</span></td>
+                    <td><span class="status-pill {{ payment.payment_status|slugify }}">{{ payment.payment_status }}</span></td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <div class="empty-state-text">No payment records found.</div>
                         </div>
@@ -49,6 +46,4 @@
             </tbody>
         </table>
     </div>
-</div>
-
-<script src="{% static 'js/customer/customer_payment.js' %}"></script>
+</section>

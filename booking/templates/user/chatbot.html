@@ -1,0 +1,47 @@
+{% load static %}
+<!-- Landing page chatbot: quick buttons use our own data, typed questions use Google Gemini -->
+<div class="cb" id="chatbot" data-url="{% url 'chatbot_message' %}">
+    <button type="button" class="cb-launcher" id="cbOpen" aria-controls="cbPanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Ask us</span>
+    </button>
+
+    <section class="cb-panel" id="cbPanel" role="dialog" aria-label="Labra Assistant chat" aria-hidden="true">
+        <header class="cb-head">
+            <div class="cb-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M5 5c3 3 3 11 0 14M19 5c-3 3-3 11 0 14"/></svg>
+            </div>
+            <div class="cb-title">
+                <strong>Labra Assistant</strong>
+                <span>English · Tagalog · Bisaya</span>
+            </div>
+            <button type="button" class="cb-close" id="cbClose" aria-label="Close chat">×</button>
+        </header>
+
+        <div class="cb-log" id="cbLog" aria-live="polite"></div>
+
+        <div class="cb-quick" aria-label="Quick questions">
+            <button type="button" class="cb-chip" data-intent="free">Free today?</button>
+            <button type="button" class="cb-chip" data-intent="price">Rate</button>
+            <button type="button" class="cb-chip" data-intent="book">How to book</button>
+            <button type="button" class="cb-chip" data-intent="hours">Hours</button>
+            <button type="button" class="cb-chip" data-intent="weather">Weather</button>
+            <button type="button" class="cb-chip" data-intent="location">Location</button>
+            <button type="button" class="cb-chip" data-intent="pay">Payment</button>
+            <button type="button" class="cb-chip" data-intent="checkin">Check-in</button>
+            <button type="button" class="cb-chip" data-intent="contact">Contact</button>
+        </div>
+
+        <form class="cb-form" id="cbForm" autocomplete="off">
+            <input class="cb-input" id="cbInput" type="text" maxlength="500"
+                placeholder="Type a question…" aria-label="Your question">
+            <button class="cb-send" id="cbSend" type="submit" aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+            </button>
+        </form>
+        <div class="cb-foot">Answers use live court data. Typed questions are answered by Google Gemini AI and may not be perfect.</div>
+    </section>
+</div>

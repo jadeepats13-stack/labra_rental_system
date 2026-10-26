@@ -11,11 +11,14 @@ __pycache__/
 *.pyc
 
 # Local database and uploaded files
-db.sqlite3
+*.sqlite3
 media/
 
 # Static files collected for deployment
 staticfiles/
+
+# Claude Code local settings
+.claude/
 
 # Editor / OS files
 .vscode/

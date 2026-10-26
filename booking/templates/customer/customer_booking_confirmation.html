@@ -5,109 +5,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Confirmation – Labra Basketball Court Rental</title>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_confirmatio.css' %}">
+    {% include 'common/theme_init.html' with key='labra-theme-customer' default='dark' %}
+    <title>Booking #{{ booking.booking_id }} – Labra Basketball Court Rental</title>
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap">
-
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_base.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_confirmatio.css' %}?v=4">
 </head>
 
 <body>
+    {% include 'customer/customer_icons.html' %}
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
+    {% include 'customer/customer_sidebar.html' with active_page='bookings' %}
 
     <div class="main-content">
-        <div class="top-bar">
-            <div class="page-title">Booking <span>Confirmation</span></div>
+        <header class="top-bar">
+            <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Open menu"
+                aria-controls="sidebar" aria-expanded="false">
+                <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+            <h1 class="page-title">Booking <span>Confirmation</span></h1>
             <div class="top-bar-right">
-                <div class="date-badge" id="currentDate"></div>
+                <div class="date-badge">
+                    <svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+                    <span id="currentDate"></span>
+                </div>
+                {% include 'common/theme_toggle.html' with key='labra-theme-customer' %}
             </div>
-        </div>
+        </header>
 
-        <div class="confirmation-layout">
-            <div class="success-banner">
-                <div class="success-icon"></div>
+        <main class="confirmation-layout" id="mainContent" tabindex="-1">
+            <div class="success-banner" role="status">
+                <div class="success-icon" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></div>
                 <div class="success-content">
-                    <h2>Booking Confirmed!</h2>
-                    <p>Your court booking has been successfully created. Please complete payment to secure your
-                        reservation.</p>
+                    {% if booking.booking_status == 'Pending' %}
+                    <h2>Booking request received</h2>
+                    <p>Booking #{{ booking.booking_id }} is waiting for approval from the court staff. Complete payment to secure your reservation.</p>
+                    {% elif booking.booking_status == 'Approved' %}
+                    <h2>Booking approved</h2>
+                    <p>Booking #{{ booking.booking_id }} is approved. Complete payment to secure your reservation.</p>
+                    {% else %}
+                    <h2>Booking #{{ booking.booking_id }}</h2>
+                    <p>This booking is {{ booking.booking_status|lower }}.</p>
+                    {% endif %}
                     {% if email_status %}
-                    <p><small>{% if not email_status.sent %}⚠️ {% endif %}{{ email_status.message }}</small></p>
+                    <p class="email-status{% if not email_status.sent %} is-warning{% endif %}">
+                        <svg class="icon" aria-hidden="true"><use href="#{% if email_status.sent %}i-check{% else %}i-error{% endif %}"/></svg>
+                        <span>{{ email_status.message }}</span>
+                    </p>
                     {% endif %}
                 </div>
             </div>
 
             <div class="confirmation-grid">
 
-                <div class="booking-details-card">
+                <section class="booking-details-card" aria-labelledby="detailsTitle">
                     <div class="card-header">
-                        <h3>Booking Details</h3>
+                        <h3 id="detailsTitle">Booking details</h3>
+                        <span class="status-pill {{ booking.booking_status|slugify }}">{{ booking.booking_status }}</span>
                     </div>
 
-                    <div class="booking-summary">
+                    <dl class="booking-summary">
                         <div class="summary-item">
-                            <span class="label">Booking ID</span>
-                            <span class="value">#{{ booking.booking_id }}</span>
+                            <dt class="label">Booking ID</dt>
+                            <dd class="value">#{{ booking.booking_id }}</dd>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Court</span>
-                            <span class="value">{{ court_name }}</span>
+                            <dt class="label">Court</dt>
+                            <dd class="value">{{ court_name }}</dd>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Date</span>
-                            <span class="value">{{ booking.booking_date|date:"F j, Y" }}</span>
+                            <dt class="label">Date</dt>
+                            <dd class="value">{{ booking.booking_date|date:"l, F j, Y" }}</dd>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Start Time</span>
-                            <span class="value">{{ booking.start_time|time:"g:i A" }}</span>
+                            <dt class="label">Time</dt>
+                            <dd class="value">{{ booking.start_time|time:"g:i A" }} – {{ booking.end_time|time:"g:i A" }}</dd>
                         </div>
                         <div class="summary-item">
-                            <span class="label">End Time</span>
-                            <span class="value">{{ booking.end_time|time:"g:i A" }}</span>
+                            <dt class="label">Duration</dt>
+                            <dd class="value">{{ duration_str }}</dd>
                         </div>
                         <div class="summary-item">
-                            <span class="label">Duration</span>
-                            <span class="value">{{ duration_str }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="label">Weather</span>
-                            <span class="value">
+                            <dt class="label">Weather</dt>
+                            <dd class="value">
                                 {% if weather.available %}
                                 {{ weather.temperature }}°C, {{ weather.description }} · {{ weather.rain_chance }}% chance of rain
-                                {% if weather.rain_warning %}<br><small>⚠️ Rain is likely, as the LA court is outdoors.</small>{% endif %}
+                                {% if weather.rain_warning %}<small class="weather-warn">Rain is likely, as the LA court is outdoors.</small>{% endif %}
                                 {% else %}
                                 <small>{{ weather.message }}</small>
                                 {% endif %}
-                            </span>
+                            </dd>
                         </div>
                         <div class="summary-item total">
-                            <span class="label">Total Amount</span>
-                            <span class="value">₱{{ booking.total_price }}</span>
+                            <dt class="label">Total amount</dt>
+                            <dd class="value">₱{{ booking.total_price }}</dd>
                         </div>
-                    </div>
+                    </dl>
 
-                    <div class="booking-status">
-                        <div class="status-badge">{{ booking.booking_status }}</div>
-                        <p class="status-note">
-                            {% if booking.booking_status == 'Pending' %}
-                            Your booking is pending approval. Complete payment to proceed.
-                            {% elif booking.booking_status == 'Approved' %}
-                            Your booking has been approved. Payment is required to confirm.
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
+                    {% if booking.booking_status == 'Pending' or booking.booking_status == 'Approved' %}
+                    <p class="status-note">
+                        {% if booking.booking_status == 'Pending' %}
+                        Your booking is pending approval. Complete payment to proceed.
+                        {% else %}
+                        Your booking has been approved. Payment is required to confirm.
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </section>
+
                 <div class="payment-section">
-                    <div class="payment-card">
+                    <section class="payment-card" aria-labelledby="payTitle">
                         <div class="card-header">
-                            <h3>Complete Payment</h3>
+                            <h3 id="payTitle">Complete payment</h3>
                         </div>
 
                         <div class="payment-summary">
                             <div class="payment-row">
-                                <span>Booking Amount</span>
+                                <span>Booking amount</span>
                                 <strong>₱{{ booking.total_price }}</strong>
                             </div>
                             <div class="payment-row total">
-                                <span>Total to Pay</span>
+                                <span>Total to pay</span>
                                 <strong>₱{{ booking.total_price }}</strong>
                             </div>
                         </div>
@@ -116,46 +135,49 @@
                             {% csrf_token %}
                             <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
 
-                            <div class="payment-methods-wrap">
-                                <div class="payment-methods-label">Select Payment Method</div>
+                            <fieldset class="payment-methods-wrap">
+                                <legend class="payment-methods-label">Select payment method</legend>
                                 <div class="payment-methods">
                                     <label class="payment-method" onclick="selectPaymentMethod(this, 'Cash')">
-                                        <input type="radio" name="payment_method" value="Cash" style="display:none;"
+                                        <input type="radio" name="payment_method" value="Cash" class="visually-hidden"
                                             required>
+                                        <svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg>
                                         <div class="method-name">Cash</div>
                                         <div class="method-desc">Pay at the court reception</div>
                                     </label>
                                     <label class="payment-method" onclick="selectPaymentMethod(this, 'Online')">
-                                        <input type="radio" name="payment_method" value="Online" style="display:none;">
+                                        <input type="radio" name="payment_method" value="Online" class="visually-hidden">
+                                        <svg class="icon" aria-hidden="true"><use href="#i-card"/></svg>
                                         <div class="method-name">Online</div>
                                         <div class="method-desc">Pay via PayPal</div>
                                     </label>
                                 </div>
-                            </div>
+                            </fieldset>
 
                             <div id="paypal-button-container" style="display:none;"></div>
 
                             <div class="payment-actions">
-                                <a href="{% url 'customer_dashboard' %}" class="btn btn-outline">Back to Dashboard</a>
                                 <button type="submit" class="btn btn-primary" id="payBtn" disabled>
                                     Complete Payment
                                 </button>
+                                <a href="{% url 'customer_dashboard' %}#bookings" class="btn btn-outline">Pay later</a>
                             </div>
                         </form>
-                    </div>
-                    <div class="instructions-card">
-                        <h4>Payment Instructions</h4>
+                    </section>
+
+                    <section class="instructions-card" aria-labelledby="howTitle">
+                        <h4 id="howTitle">How payment works</h4>
                         <ul>
-                            <li>Choose your preferred payment method above</li>
-                            <li>For cash, visit the court reception during operating hours</li>
-                            <li>Online payments are processed immediately via PayPal</li>
-                            <li>Your booking is confirmed once payment is received</li>
+                            <li>Choose your preferred payment method above.</li>
+                            <li>For cash, visit the court reception during operating hours.</li>
+                            <li>Online payments are processed immediately via PayPal.</li>
+                            <li>Your booking is confirmed once payment is received.</li>
                         </ul>
-                    </div>
+                    </section>
                 </div>
 
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -167,7 +189,9 @@
 
     <script
         src="https://www.paypal.com/sdk/js?client-id=BAAA7G0GrqAIQjYHzMO0OlAkAPLMoUaSkqTdoM0akdAOrgWKu3pXIAuqFNt74KUh-umLzDdvFCRL7fZGz8&currency=PHP"></script>
-    <script src="{% static 'js/customer/customer_booking_confirmation.js' %}"></script>
+    <script src="{% static 'js/customer/customer_booking_confirmation.js' %}?v=2"></script>
+    <script src="{% static 'js/common/theme_toggle.js' %}?v=3"></script>
+    <script src="{% static 'js/customer/customer_ui.js' %}?v=1"></script>
 
 </body>
 

@@ -20,7 +20,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Admin, Booking, Court, Customer, GoogleCalendarToken, Payment
+from .models import Admin, Booking, Court, Customer, Damage, GoogleCalendarToken, Payment
 
 API_SETTINGS = dict(
     OPENWEATHER_API_KEY='test-owm-key', COURT_LATITUDE='', COURT_LONGITUDE='',
@@ -786,12 +786,15 @@ class CustomerDashboardTests(BaseTestCase):
         self.assertEqual(bookings_page.count('btn-gcal'), 0)
         self.assertIn(f'data-search="{approved.booking_id}" data-status="Approved" data-payment="Unpaid"', bookings_page)
 
-    def test_customer_search_bars_and_calendar_present(self):
+    def test_customer_search_bars_present_and_calendar_removed(self):
         html = self.dashboard()
         for table in ['myBookingsTable', 'historyTable', 'myPaymentsTable']:
             self.assertIn(f'data-table="{table}"', html)
             self.assertIn(f'id="{table}"', html)
-        self.assertIn(f'id="availCalendar" data-url="{reverse("customer_availability")}"', html)
+        # Calendar removed; booked times still come from /availability/ for the time lists
+        self.assertNotIn('id="availCalendar"', html)
+        self.assertNotIn('vendor/fullcalendar', html)
+        self.assertIn(f'data-availability-url="{reverse("customer_availability")}"', html)
         self.assertIn('js/customer/customer_availability.js', html)
 
 
@@ -989,8 +992,8 @@ class CheckinTests(BaseTestCase):
         self.assertTrue(ok1)
         self.assertEqual((ok2, reason2), (False, 'already'))
 
-    # sessions + auto-complete ---------------------------------------------
-    def test_sessions_list_and_auto_complete(self):
+    # sessions: time over -> "Time ended", NOT auto-completed ------------------
+    def test_sessions_list_and_time_ended_waits_for_complete(self):
         b = self.booking(start=time(14, 0), end=time(16, 0))
         self.staff()
         self.start(b.confirmation_code)
@@ -1000,10 +1003,10 @@ class CheckinTests(BaseTestCase):
         later = FIXED_NOW + timedelta(hours=1, minutes=1)
         with mock.patch('django.utils.timezone.now', return_value=later):
             data = self.client.get(reverse('checkin_sessions')).json()
-        self.assertEqual(data['sessions'], [])
-        self.assertEqual(data['completed'], 1)
-        b.refresh_from_db()
-        self.assertEqual(b.booking_status, 'Completed')
+            self.assertEqual(data['sessions'], [])
+            b.refresh_from_db()
+            self.assertEqual(b.booking_status, 'Approved')          # staff still has to click Complete
+            self.assertEqual(b.stage, 'Time ended')
 
     # security ---------------------------------------------------------------
     def test_staff_endpoints_need_admin(self):
@@ -1075,7 +1078,7 @@ class CheckinTests(BaseTestCase):
         return self.client.post(reverse('checkin_end'), json.dumps({'code': code}),
                                 content_type='application/json').json()
 
-    def test_end_early_completes_and_frees_the_slot(self):
+    def test_end_early_stops_countdown_frees_slot_and_waits_for_complete(self):
         b = self.booking(start=time(14, 0), end=time(16, 0))
         self.staff()
         self.start(b.confirmation_code)
@@ -1083,15 +1086,17 @@ class CheckinTests(BaseTestCase):
         with mock.patch('django.utils.timezone.now', return_value=later):
             data = self.end(b.confirmation_code)
             self.assertEqual((data['ok'], data['reason']), (True, 'ended'))
-            self.assertIn('ended early at 3:10 PM (50 min unused)', data['message'])
+            self.assertIn('ended at 3:10 PM (50 min unused)', data['message'])
+            self.assertIn('Manage Bookings', data['message'])
             b.refresh_from_db()
-            self.assertEqual(b.booking_status, 'Completed')
+            self.assertEqual(b.booking_status, 'Approved')          # not Completed yet
+            self.assertEqual(b.stage, 'Time ended')
             self.assertEqual(b.session_ends_at, later)
             self.assertEqual(self.client.get(reverse('checkin_sessions')).json()['sessions'], [])
             # second click / second staff: refused, nothing changes
             again = self.end(b.confirmation_code)
             self.assertEqual((again['ok'], again['reason']), (False, 'already_ended'))
-            # verifying it again shows it is completed, so it can't be restarted
+            # verifying it again shows it is finished, so it can't be restarted
             self.assertEqual(self.verify(b.confirmation_code)['reason'], 'already')
             self.assertFalse(self.start(b.confirmation_code)['ok'])
             # the rest of the slot no longer blocks new bookings
@@ -1123,6 +1128,239 @@ class CheckinTests(BaseTestCase):
         self.assertIn('id="ciEndModal"', html)
         self.assertIn('End playing time now', html)
         self.assertIn(f'data-end-url="{reverse("checkin_end")}"', html)
+
+
+# ───────────────────────────── Stay on the same admin page + Complete workflow ─────
+class AdminStayOnPageTests(BaseTestCase):
+    """After an admin action the page reloads on the same section, not the Dashboard."""
+
+    def setUp(self):
+        super().setUp()
+        self.login_admin()
+
+    def location(self, resp):
+        self.assertEqual(resp.status_code, 302)
+        return resp['Location']
+
+    def test_booking_actions_return_to_manage_bookings(self):
+        b = Booking.objects.create(booking_date=date.today() + timedelta(days=3), start_time=time(10, 0),
+                                   end_time=time(11, 0), total_price=200, booking_status='Pending',
+                                   customer=self.customer, court=self.court)
+        self.assertTrue(self.location(self.client.post(reverse('admin_approve_booking', args=[b.booking_id])))
+                        .endswith('/admin_dashboard/#bookings'))
+        self.assertTrue(self.location(self.client.post(reverse('admin_complete_booking', args=[b.booking_id])))
+                        .endswith('#bookings'))                       # refused, but still Manage Bookings
+        self.assertTrue(self.location(self.client.post(reverse('admin_cancel_booking', args=[b.booking_id])))
+                        .endswith('#bookings'))
+        b.refresh_from_db()
+        self.assertEqual(b.booking_status, 'Cancelled')
+
+    def test_court_actions_return_to_manage_courts(self):
+        url = reverse('update_court', args=[self.court.court_id])
+        resp = self.client.post(url, {'court_name': 'LA Court', 'rate_per_hour': '250', 'court_status': 'Maintenance'})
+        self.assertTrue(self.location(resp).endswith('#courts'))
+        self.court.refresh_from_db()
+        self.assertEqual(self.court.court_status, 'Maintenance')
+        resp = self.client.post(reverse('update_court_status', args=[self.court.court_id]), {'court_status': 'Available'})
+        self.assertTrue(self.location(resp).endswith('#courts'))
+        # errors stay on the page too
+        self.assertTrue(self.location(self.client.post(url, {'court_name': '', 'rate_per_hour': ''})).endswith('#courts'))
+
+    def test_damage_and_profile_actions_stay(self):
+        b = Booking.objects.create(booking_date=date.today() - timedelta(days=1), start_time=time(10, 0),
+                                   end_time=time(11, 0), total_price=200, booking_status='Completed',
+                                   customer=self.customer, court=self.court)
+        resp = self.client.post(reverse('add_damage', args=[b.booking_id]), {'description': 'Net torn', 'fee': '100'})
+        self.assertTrue(self.location(resp).endswith('#bookings'))
+        d = Damage.objects.get(booking=b)
+        self.assertTrue(self.location(self.client.post(reverse('settle_damage', args=[d.damage_id])))
+                        .endswith('#damages'))
+        self.assertTrue(self.location(self.client.post(reverse('admin_update_profile'), {
+            'firstname': 'Ad', 'lastname': 'Min', 'username': self.admin.username})).endswith('#profile'))
+
+    def test_success_message_shows_after_reload(self):
+        b = Booking.objects.create(booking_date=date.today() + timedelta(days=3), start_time=time(10, 0),
+                                   end_time=time(11, 0), total_price=200, booking_status='Pending',
+                                   customer=self.customer, court=self.court)
+        resp = self.client.post(reverse('admin_approve_booking', args=[b.booking_id]), follow=True)
+        self.assertContains(resp, f'Booking #{b.booking_id} has been approved')
+
+
+class CustomerStayOnPageTests(BaseTestCase):
+    """Customer actions reload on the page they came from, not the Dashboard."""
+
+    def setUp(self):
+        super().setUp()
+        self.login_customer()
+
+    def where(self, resp):
+        self.assertEqual(resp.status_code, 302)
+        return resp['Location']
+
+    def test_cancel_returns_to_the_page_it_came_from(self):
+        b = self.make_booking()
+        resp = self.client.post(reverse('cancel_booking', args=[b.booking_id]), {'return_to': 'bookings'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#bookings')
+        b2 = self.make_booking(start=time(14, 0), end=time(15, 0))
+        resp = self.client.post(reverse('cancel_booking', args=[b2.booking_id]), {'return_to': 'dashboard'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#dashboard')
+        b.refresh_from_db()
+        self.assertEqual(b.booking_status, 'Cancelled')
+
+    def test_unknown_return_to_falls_back_safely(self):
+        b = self.make_booking()
+        resp = self.client.post(reverse('cancel_booking', args=[b.booking_id]),
+                                {'return_to': 'https://evil.example.com'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#bookings')
+
+    def test_cash_payment_stays_on_page(self):
+        b = self.make_booking()
+        resp = self.client.post(reverse('process_payment'), {'booking_id': b.booking_id, 'payment_method': 'Cash',
+                                                             'return_to': 'payment'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#payment')
+        self.assertEqual(Payment.objects.get(booking=b).payment_status, 'Paid')     # payment unchanged
+
+    def test_profile_stays_on_profile(self):
+        resp = self.client.post(reverse('update_profile'), {'firstname': 'Juan', 'lastname': 'Cruz',
+                                                            'username': 'juan', 'email': 'bad-email'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#profile')
+        resp = self.client.post(reverse('update_profile'), {'firstname': 'Juan', 'lastname': 'Dela Cruz',
+                                                            'username': 'juan', 'email': 'juan@example.com',
+                                                            'return_to': 'profile'})
+        self.assertEqual(self.where(resp), '/customer_dashboard/#profile')
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.lastname, 'Dela Cruz')
+
+    def test_booking_error_stays_on_book_page_and_success_goes_to_confirmation(self):
+        self.make_booking(status='Approved')                    # 10:00-12:00 taken
+        self.assertEqual(self.where(self.post_booking('11:00', '13:00')), '/customer_dashboard/#book')
+        resp = self.post_booking('14:00', '16:00')
+        self.assertIn('/booking_confirmation/', self.where(resp))
+
+    def test_stay_script_loaded(self):
+        html = self.client.get(reverse('customer_dashboard')).content.decode()
+        self.assertIn('js/customer/customer_stay.js', html)
+
+
+class CompleteWorkflowTests(BaseTestCase):
+    """Approved -> Playing -> Time ended -> Completed (Complete only after the time ends)."""
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch('django.utils.timezone.now', return_value=FIXED_NOW)   # 3:00 PM Manila
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.login_admin()
+
+    def booking(self, start=time(14, 0), end=time(16, 0)):
+        from . import checkin
+        b = Booking.objects.create(booking_date=GAME_DAY, start_time=start, end_time=end, total_price=400,
+                                   booking_status='Approved', customer=self.customer, court=self.court)
+        Payment.objects.create(booking=b, payment_amount=400, payment_status='Paid', payment_method='Online')
+        checkin.ensure_code(b)
+        b.refresh_from_db()
+        return b
+
+    def post_json(self, name, code):
+        return self.client.post(reverse(name), json.dumps({'code': code}), content_type='application/json').json()
+
+    def complete(self, b):
+        self.client.post(reverse('admin_complete_booking', args=[b.booking_id]))
+        b.refresh_from_db()
+        return b.booking_status
+
+    def row(self, b):
+        html = self.client.get(reverse('admin_dashboard')).content.decode()
+        page = html.split('id="page-bookings"')[1].split('id="page-schedule"')[0]
+        start = page.index(f'<td class="mono">{b.booking_id}</td>')
+        return page[page.rfind('<tr', 0, start):page.index('</tr>', start)]
+
+    def test_full_workflow(self):
+        b = self.booking()
+        # 1. Confirmed, not checked in: no Complete button, Complete refused
+        row = self.row(b)
+        self.assertNotIn('admin_complete_booking', row)
+        self.assertNotIn(f'/admin_complete_booking/{b.booking_id}/', row)
+        self.assertIn('Cancel', row)
+        self.assertEqual(self.complete(b), 'Approved')
+        # 2. Verified + started: Playing, Complete hidden and refused
+        self.assertEqual(self.post_json('checkin_start', b.confirmation_code)['reason'], 'started')
+        b.refresh_from_db()
+        self.assertEqual(b.stage, 'Playing')
+        row = self.row(b)
+        self.assertIn('data-status="Playing"', row)
+        self.assertIn('data-stage-ends="', row)
+        self.assertIn('style="display:none;" data-complete-after-ends', row)       # only shown by the countdown at 0
+        self.assertNotIn('>Cancel</button>', row)
+        resp = self.client.post(reverse('admin_complete_booking', args=[b.booking_id]), follow=True)
+        self.assertContains(resp, 'is still playing')
+        b.refresh_from_db()
+        self.assertEqual(b.booking_status, 'Approved')
+        # 3. End playing time now: Time ended, Complete visible
+        later = FIXED_NOW + timedelta(minutes=10)
+        with mock.patch('django.utils.timezone.now', return_value=later):
+            self.assertEqual(self.post_json('checkin_end', b.confirmation_code)['reason'], 'ended')
+            b.refresh_from_db()
+            self.assertEqual((b.booking_status, b.stage), ('Approved', 'Time ended'))
+            row = self.row(b)
+            self.assertIn('data-status="Time ended"', row)
+            self.assertIn(f'/admin_complete_booking/{b.booking_id}/', row)
+            self.assertNotIn('data-complete-after-ends', row)
+            # cancelling after check-in is refused
+            self.client.post(reverse('admin_cancel_booking', args=[b.booking_id]))
+            b.refresh_from_db()
+            self.assertEqual(b.booking_status, 'Approved')
+            # 4. Complete -> Completed; second click refused
+            self.assertEqual(self.complete(b), 'Completed')
+            self.assertEqual(self.complete(b), 'Completed')
+            row = self.row(b)
+            self.assertIn('File Damage', row)
+
+    def test_natural_end_shows_complete(self):
+        b = self.booking(start=time(14, 0), end=time(15, 30))
+        self.post_json('checkin_start', b.confirmation_code)
+        self.assertEqual(self.complete(b), 'Approved')               # countdown still running
+        later = FIXED_NOW + timedelta(minutes=31)
+        with mock.patch('django.utils.timezone.now', return_value=later):
+            b.refresh_from_db()
+            self.assertEqual(b.stage, 'Time ended')
+            self.assertIn(f'/admin_complete_booking/{b.booking_id}/', self.row(b))
+            self.assertEqual(self.complete(b), 'Completed')
+
+    def test_complete_requires_post(self):
+        b = self.booking()
+        self.post_json('checkin_start', b.confirmation_code)
+        with mock.patch('django.utils.timezone.now', return_value=FIXED_NOW + timedelta(hours=2)):
+            self.client.get(reverse('admin_complete_booking', args=[b.booking_id]))
+            b.refresh_from_db()
+            self.assertEqual(b.booking_status, 'Approved')
+
+    def test_end_pop_up_and_scripts_present(self):
+        html = self.client.get(reverse('admin_dashboard')).content.decode()
+        self.assertIn('id="ciEndedModal"', html)
+        self.assertIn('Go to Manage Bookings', html)
+        self.assertIn('js/admin/admin_bookings.js', html)
+        self.assertIn('data-server-now="', html)
+        for option in ['<option value="Playing">Playing</option>', '<option value="Time ended">Time ended</option>']:
+            self.assertIn(option, html)
+
+    def test_ended_session_frees_rest_of_slot_and_leaves_next_game(self):
+        from . import availability
+        b = self.booking(start=time(14, 0), end=time(17, 0))
+        self.post_json('checkin_start', b.confirmation_code)
+        later = FIXED_NOW + timedelta(minutes=10)
+        with mock.patch('django.utils.timezone.now', return_value=later):
+            self.post_json('checkin_end', b.confirmation_code)
+            self.assertIsNone(availability.next_game(self.customer, timezone.localtime(later)))
+            self.client.logout()
+            self.login_customer()
+            html = self.client.get(reverse('customer_dashboard')).content.decode()
+            self.assertIn('Time ended', html)
+            resp = self.client.post(reverse('book_court'), {
+                'court_id': self.court.court_id, 'booking_date': GAME_DAY.isoformat(),
+                'start_time': '16:00', 'end_time': '17:00', 'total_price': '200'})
+            self.assertEqual(resp.status_code, 302)
+            self.assertEqual(Booking.objects.filter(booking_date=GAME_DAY, start_time=time(16, 0)).count(), 1)
 
 
 # ───────────────────────────── Landing page + Log in / Sign up pop-up ─────
@@ -1240,3 +1478,147 @@ class SidebarBadgeTests(BaseTestCase):
         self.assertRegex(html, r'id="badgeBookings"[^>]*data-items="\d+:Approved:unpaid,\d+:Pending:unpaid"[^>]*>2</span>')
         self.assertIn('title="2 unpaid">2</span>', html)
 
+
+# ───────────────────────────── Landing page chatbot (Google Gemini + built-in answers) ─────
+def gemini_ok(text='Bukas pa ang court karon.'):
+    return fake_response(200, {'candidates': [{'content': {'parts': [{'text': text}]}}]})
+
+
+@override_settings(GEMINI_API_KEY='test-key', GEMINI_MODEL='gemini-test', CHATBOT_HOURLY_LIMIT=20,
+                   CHATBOT_DAILY_AI_LIMIT=200)
+class ChatbotTests(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch('django.utils.timezone.now', return_value=FIXED_NOW)   # Sat 3:00 PM Manila
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def chat(self, **payload):
+        resp = self.client.post(reverse('chatbot_message'), json.dumps(payload), content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        return resp.json()
+
+    def test_landing_has_chatbot_but_never_the_key(self):
+        html = self.client.get(reverse('home')).content.decode()
+        self.assertIn('id="chatbot"', html)
+        self.assertIn('Labra Assistant', html)
+        self.assertIn('js/user/chatbot.js', html)
+        self.assertNotIn('test-key', html)
+
+    def test_get_not_allowed(self):
+        self.assertEqual(self.client.get(reverse('chatbot_message')).status_code, 405)
+
+    def test_quick_button_free_today_uses_live_bookings(self):
+        Booking.objects.create(booking_date=GAME_DAY, start_time=time(16, 0), end_time=time(18, 0), total_price=400,
+                               booking_status='Approved', customer=self.customer, court=self.court)
+        with mock.patch('booking.services.gemini.requests.post') as post:
+            data = self.chat(intent='free')
+        post.assert_not_called()                                     # quick buttons never use the AI
+        self.assertEqual(data['source'], 'quick')
+        self.assertIn('3:30 PM - 4:00 PM', data['reply'])            # 3 PM now; 4-6 PM booked
+        self.assertIn('6:00 PM - 10:00 PM', data['reply'])
+        self.assertNotIn('Juan', data['reply'])                      # never other customers' names
+
+    def test_quick_buttons_all_answer(self):
+        for intent in ['free', 'price', 'hours', 'weather', 'location', 'book', 'pay', 'checkin', 'cancel', 'contact']:
+            data = self.chat(intent=intent)
+            self.assertTrue(data['reply'], intent)
+        self.assertIn('200.00', self.chat(intent='price')['reply'])
+
+    def test_typed_question_goes_to_gemini_with_facts_and_history(self):
+        with mock.patch('booking.services.gemini.requests.post', return_value=gemini_ok()) as post:
+            data = self.chat(message='Naa pa bay bakante karon?',
+                             history=[{'role': 'user', 'text': 'hello'}, {'role': 'bot', 'text': 'Hi!'}])
+        self.assertEqual(data, {'reply': 'Bukas pa ang court karon.', 'source': 'ai', 'limited': False})
+        url = post.call_args[0][0]
+        kwargs = post.call_args[1]
+        self.assertIn('/models/gemini-test:generateContent', url)
+        self.assertEqual(kwargs['headers']['x-goog-api-key'], 'test-key')
+        body = kwargs['json']
+        system = body['system_instruction']['parts'][0]['text']
+        for fact in ['PHP 200.00 per hour', '8:00 AM to 10:00 PM', 'Tambacan', 'Bisaya', 'Today (Sat Jun 15)']:
+            self.assertIn(fact, system)
+        self.assertEqual([c['role'] for c in body['contents']], ['user', 'model', 'user'])
+        self.assertEqual(body['contents'][-1]['parts'][0]['text'], 'Naa pa bay bakante karon?')
+
+    def test_gemini_failure_falls_back_to_builtin_answer(self):
+        for status in [429, 403, 500]:
+            with mock.patch('booking.services.gemini.requests.post', return_value=fake_response(status)):
+                data = self.chat(message='Magkano ang bayad kada oras?')
+            self.assertEqual(data['source'], 'builtin', status)
+            self.assertIn('200.00', data['reply'])                   # matched the price keyword "magkano"
+        with mock.patch('booking.services.gemini.requests.post', side_effect=requests.ConnectionError):
+            data = self.chat(message='where is the court?')
+        self.assertIn('Tambacan', data['reply'])
+        with mock.patch('booking.services.gemini.requests.post', return_value=fake_response(500)):
+            data = self.chat(message='who won the NBA finals?')
+        self.assertIn('I can only help with', data['reply'])
+
+    @override_settings(GEMINI_API_KEY='')
+    def test_works_without_a_key(self):
+        with mock.patch('booking.services.gemini.requests.post') as post:
+            data = self.chat(message='What are your hours?')
+        post.assert_not_called()
+        self.assertIn('8:00 AM to 10:00 PM', data['reply'])
+
+    @override_settings(CHATBOT_HOURLY_LIMIT=2)
+    def test_hourly_limit_per_visitor(self):
+        with mock.patch('booking.services.gemini.requests.post', return_value=gemini_ok()) as post:
+            self.chat(message='one')
+            self.chat(message='two')
+            data = self.chat(message='three')
+            self.assertTrue(data['limited'])
+            self.assertEqual(post.call_count, 2)
+            self.assertEqual(self.chat(intent='price')['source'], 'quick')    # buttons still work
+
+    @override_settings(CHATBOT_DAILY_AI_LIMIT=1)
+    def test_daily_ai_cap_uses_builtin_answers(self):
+        with mock.patch('booking.services.gemini.requests.post', return_value=gemini_ok()) as post:
+            self.assertEqual(self.chat(message='hi there')['source'], 'ai')
+            self.assertEqual(self.chat(message='how much per hour?')['source'], 'builtin')
+        self.assertEqual(post.call_count, 1)
+
+    def test_long_message_and_bad_history_are_trimmed(self):
+        with mock.patch('booking.services.gemini.requests.post', return_value=gemini_ok()) as post:
+            self.chat(message='x' * 2000, history=['bad', {'role': 'bot', 'text': 'y' * 900}] + [{'text': 'z'}] * 10)
+        contents = post.call_args[1]['json']['contents']
+        self.assertEqual(len(contents[-1]['parts'][0]['text']), 500)
+        self.assertLessEqual(len(contents), 7)
+
+    def test_maintenance_says_closed(self):
+        self.court.court_status = 'Maintenance'
+        self.court.save()
+        self.assertIn('maintenance', self.chat(intent='free')['reply'])
+
+
+# ───────────────────────────── Headers + smooth theme switch ─────
+class HeaderTests(BaseTestCase):
+    def test_customer_header(self):
+        self.login_customer()
+        html = self.client.get(reverse('customer_dashboard')).content.decode()
+        self.assertNotIn('Customer <span>Dashboard</span>', html)
+        self.assertIn('<h1 class="page-title visually-hidden" id="pageTitle">Dashboard</h1>', html)
+        self.assertIn('id="topBarBook"', html)
+        self.assertIn('Book a court', html)
+        self.assertIn('data-theme-toggle', html)
+
+    def test_admin_header(self):
+        self.login_admin()
+        html = self.client.get(reverse('admin_dashboard')).content.decode()
+        header = html.split('<header class="header">')[1].split('</header>')[0]
+        self.assertNotIn('header-crumb', header)
+        self.assertNotIn('>Admin<', header)
+        self.assertIn('<span class="header-current" id="headerTitle"></span>', header)
+        self.assertIn('id="headerCheckin"', header)
+        self.assertIn("showPage('checkin')", header)
+
+    def test_theme_script_fades(self):
+        from pathlib import Path
+        from django.conf import settings as dj
+        js = (Path(dj.BASE_DIR) / 'booking/static/js/common/theme_toggle.js').read_text()
+        self.assertIn('startViewTransition', js)
+        self.assertIn('prefers-reduced-motion', js)
+        for css in ['booking/static/css/customer/customer_base.css', 'booking/static/css/admin/admin_dashbo.css']:
+            text = (Path(dj.BASE_DIR) / css).read_text()
+            self.assertIn('::view-transition-old(root)', text)
+            self.assertIn('.theme-fading', text)

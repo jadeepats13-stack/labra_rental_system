@@ -4,7 +4,7 @@ their ID numbers at 1. Keeps the admin account(s), the LA Court record and
 the Google Calendar connection.
 
 Run from the project folder (PowerShell):
-    Get-Content reset_records.py | python manage.py shell
+    python manage.py shell -c "exec(open('reset_records.py').read())"
 """
 from django.db import connection, transaction
 

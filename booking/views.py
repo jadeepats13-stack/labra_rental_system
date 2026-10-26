@@ -22,6 +22,7 @@ from .services.emailjs import send_booking_confirmation
 from .services import google_calendar
 from .services.qr_code import qr_image_url
 from . import checkin
+from . import chatbot
 import secrets
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -47,6 +48,20 @@ def _landing(request, auth_tab=''):
         'logged_in_admin': bool(request.session.get('admin_id')),
     }
     return render(request, 'user/landing.html', context)
+
+
+def chatbot_message(request):
+    """
+    Landing page chatbot. POST JSON {intent} for a quick button, or
+    {message, history} for a typed question (answered by Google Gemini,
+    with built-in answers as the fallback).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    data = _json_body(request)
+    result = chatbot.reply(request, message=str(data.get('message', '')),
+                           intent=str(data.get('intent', '')), history=data.get('history'))
+    return JsonResponse(result)
 
 
 def home(request):
@@ -133,7 +148,7 @@ def customer_login(request):
             if admin.password == password:  # use check_password() if hashed
                 request.session['admin_id'] = admin.admin_id
                 request.session.set_expiry(86400)
-                messages.success(request, f'Welcome, Admin {admin.firstname}!')
+                messages.success(request, f'Welcome back, Admin {admin.firstname}!')
                 return redirect('admin_dashboard')
             return _auth_error(request, 'login', 'Incorrect username or password.', form)
         except Admin.DoesNotExist:
@@ -168,8 +183,6 @@ def customer_dashboard(request):
         return redirect('login')
 
     customer = Customer.objects.get(customer_id=customer_id)
-    checkin.complete_finished_sessions()      # playing time over -> Completed
-
     # Single LA court (kept as a list so the existing templates still work)
     courts = Court.objects.order_by('court_id')
 
@@ -281,7 +294,7 @@ def book_court(request):
         return redirect('login')
 
     if request.method != 'POST':
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     court_id       = request.POST.get('court_id')
     booking_date   = request.POST.get('booking_date')
@@ -296,14 +309,14 @@ def book_court(request):
         end_time = time.fromisoformat(end_time_str + ':00')
     except ValueError:
         messages.error(request, 'Invalid time format.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     # ── Validate that booking is not in the past ──────────
     try:
         booking_date_obj = date.fromisoformat(booking_date)
     except ValueError:
         messages.error(request, 'Invalid booking date.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     now = timezone.localtime(timezone.now())
     today = now.date()
@@ -311,11 +324,11 @@ def book_court(request):
 
     if booking_date_obj < today:
         messages.error(request, 'You cannot book a date in the past.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     if booking_date_obj == today and start_time <= current_time:
         messages.error(request, f'Start time {start_time_str} has already passed. Please choose a future time.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
     # ─────────────────────────────────────────────────────
 
     # Parse court_id
@@ -326,7 +339,7 @@ def book_court(request):
         court_id = int(court_id)
     except (ValueError, TypeError):
         messages.error(request, 'Invalid court selection.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     # Convert total_price to Decimal
     try:
@@ -335,16 +348,17 @@ def book_court(request):
             raise ValueError
     except Exception:
         messages.error(request, 'Invalid total price. Check your time selection.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     court = get_object_or_404(Court, pk=court_id, court_status='Available')
 
     # Check for time conflicts
-    conflict = Booking.objects.filter(
+    # (a booking whose playing time already ended no longer holds its slot)
+    conflict = availability.holding_slots(Booking.objects.filter(
         court=court,
         booking_date=booking_date,
         booking_status__in=['Pending', 'Approved'],
-    ).exclude(
+    )).exclude(
         end_time__lte=start_time
     ).exclude(
         start_time__gte=end_time
@@ -352,7 +366,7 @@ def book_court(request):
 
     if conflict:
         messages.error(request, 'That time slot is already booked. Please choose a different time.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'book')
 
     booking = Booking.objects.create(
         booking_date=booking_date,
@@ -457,11 +471,11 @@ def cancel_booking(request, booking_id):
  
     if booking.booking_status not in ['Pending', 'Approved']:
         messages.error(request, 'This booking cannot be cancelled.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'bookings')
 
     if booking.checked_in_at:
         messages.error(request, 'This booking is already checked in and cannot be cancelled.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'bookings')
  
     booking.booking_status = 'Cancelled'
     booking.save()
@@ -469,7 +483,7 @@ def cancel_booking(request, booking_id):
     # Google Calendar: remove the admin's calendar event (customer doesn't need the details)
     google_calendar.remove_booking_event(booking)
     messages.success(request, f'Booking #{booking_id} has been cancelled.')
-    return redirect('customer_dashboard')
+    return _customer_page(request, 'bookings')
  
  
 # ─────────────────────────── process payment ────────────────────
@@ -480,7 +494,7 @@ def process_payment(request):
         return redirect('login')
 
     if request.method != 'POST':
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'payment')
 
     booking_id     = request.POST.get('booking_id')
     payment_method = request.POST.get('payment_method')
@@ -489,7 +503,7 @@ def process_payment(request):
 
     if booking.booking_status == 'Cancelled':
         messages.error(request, 'Cannot pay for a cancelled booking.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'payment')
 
     payment, created = Payment.objects.get_or_create(
         booking=booking,
@@ -508,7 +522,7 @@ def process_payment(request):
     list(messages.get_messages(request))
 
     messages.success(request, f'✅ Payment for Booking #{booking_id} completed via {payment_method}.')
-    return redirect('customer_dashboard')
+    return _customer_page(request, 'payment')
  
  
 # ─────────────────────────── update profile ─────────────────────
@@ -530,7 +544,7 @@ def update_profile(request):
 
         if not all([firstname, lastname, username]):
             messages.error(request, 'First name, last name, and username are required.')
-            return redirect('update_profile')
+            return _customer_page(request, 'profile')
 
         email = request.POST.get('email', '').strip()
         if email:
@@ -538,14 +552,14 @@ def update_profile(request):
                 validate_email(email)
             except ValidationError:
                 messages.error(request, 'Please enter a valid email address.')
-                return redirect('customer_dashboard')
+                return _customer_page(request, 'profile')
             if Customer.objects.filter(email__iexact=email).exclude(pk=customer.pk).exists():
                 messages.error(request, 'That email is already used by another account.')
-                return redirect('customer_dashboard')
+                return _customer_page(request, 'profile')
 
         if Customer.objects.filter(username=username).exclude(pk=customer.pk).exists():
             messages.error(request, 'That username is already taken.')
-            return redirect('update_profile')
+            return _customer_page(request, 'profile')
 
         customer.firstname = firstname
         customer.lastname  = lastname
@@ -555,12 +569,12 @@ def update_profile(request):
         if new_password:
             if new_password != confirm_password:
                 messages.error(request, 'Passwords do not match.')
-                return redirect('update_profile')
+                return _customer_page(request, 'profile')
             customer.password = new_password  # use make_password in production
 
         customer.save()
         messages.success(request, 'Profile updated successfully.')
-        return redirect('customer_dashboard')
+        return _customer_page(request, 'profile')
 
     # If GET request, render the profile form with customer info
     return render(request, 'customer/customer_dashboard.html', {'customer': customer})
@@ -627,6 +641,24 @@ def admin_logout(request):
     return redirect('login')
  
  
+CUSTOMER_PAGES = ('dashboard', 'book', 'bookings', 'history', 'payment', 'profile')
+
+
+def _customer_page(request, default='dashboard'):
+    """Back to the customer page the form was sent from (e.g. #bookings), not the Dashboard."""
+    from django.urls import reverse
+    page = request.POST.get('return_to', '')
+    if page not in CUSTOMER_PAGES:
+        page = default
+    return redirect(reverse('customer_dashboard') + '#' + page)
+
+
+def _admin_page(page):
+    """Back to the admin page the action came from (e.g. #bookings), not the Dashboard."""
+    from django.urls import reverse
+    return redirect(reverse('admin_dashboard') + '#' + page)
+
+
 # ─── main dashboard ─────────────────────────────────────────────
  
 def admin_dashboard(request):
@@ -635,8 +667,6 @@ def admin_dashboard(request):
     if not admin_id:
         messages.error(request, 'Please log in as admin first.')
         return redirect('login')
-
-    checkin.complete_finished_sessions()      # playing time over -> Completed
 
     try:
         admin = Admin.objects.get(admin_id=admin_id)
@@ -689,7 +719,7 @@ def update_court(request, court_id):
     court = get_object_or_404(Court, pk=court_id)
  
     if request.method != 'POST':
-        return redirect('admin_dashboard')
+        return _admin_page('courts')
  
     court_name    = request.POST.get('court_name', '').strip()
     rate_per_hour = request.POST.get('rate_per_hour', '').strip()
@@ -698,7 +728,7 @@ def update_court(request, court_id):
  
     if not court_name or not rate_per_hour:
         messages.error(request, 'Court name and rate per hour are required.')
-        return redirect('admin_dashboard')
+        return _admin_page('courts')
  
     try:
         rate = float(rate_per_hour)
@@ -706,7 +736,7 @@ def update_court(request, court_id):
             raise ValueError
     except ValueError:
         messages.error(request, 'Please enter a valid rate per hour.')
-        return redirect('admin_dashboard')
+        return _admin_page('courts')
  
     court.court_name   = court_name
     court.rate_per_hour = rate
@@ -716,7 +746,7 @@ def update_court(request, court_id):
     court.save()
  
     messages.success(request, f'Court "{court_name}" has been updated successfully.')
-    return redirect('admin_dashboard')
+    return _admin_page('courts')
 def update_court_status(request, court_id):
     """
     Quick-toggle court status (kept for backwards compatibility).
@@ -727,7 +757,7 @@ def update_court_status(request, court_id):
         return redirect('login')
  
     if request.method != 'POST':
-        return redirect('admin_dashboard')
+        return _admin_page('courts')
  
     court = get_object_or_404(Court, pk=court_id)
     new_status = request.POST.get('court_status')
@@ -739,7 +769,7 @@ def update_court_status(request, court_id):
     else:
         messages.error(request, 'Invalid court status.')
  
-    return redirect('admin_dashboard')
+    return _admin_page('courts')
 # ─── booking management ──────────────────────────────────────────
  
 def admin_approve_booking(request, booking_id):
@@ -754,7 +784,7 @@ def admin_approve_booking(request, booking_id):
  
     if booking.booking_status != 'Pending':
         messages.error(request, 'Only pending bookings can be approved.')
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
  
     booking.booking_status = 'Approved'
     booking.save()
@@ -766,7 +796,7 @@ def admin_approve_booking(request, booking_id):
     code = checkin.ensure_code(booking)
 
     messages.success(request, f'Booking #{booking_id} has been approved ({code}). {calendar_message}')
-    return redirect('admin_dashboard')
+    return _admin_page('bookings')
 
 def admin_complete_booking(request, booking_id):
     admin = get_logged_in_admin(request)
@@ -775,14 +805,13 @@ def admin_complete_booking(request, booking_id):
 
     booking = get_object_or_404(Booking, pk=booking_id)
 
-    if booking.booking_status != 'Approved':
-        messages.error(request, 'Only approved bookings can be marked as completed.')
-        return redirect('admin_dashboard')
+    if request.method != 'POST':
+        return _admin_page('bookings')
 
-    booking.booking_status = 'Completed'
-    booking.save()
-    messages.success(request, f'Booking #{booking_id} marked as completed.')
-    return redirect('admin_dashboard')
+    # Only after the playing time has ended (never while the countdown runs)
+    ok, message = checkin.complete_booking(booking)
+    (messages.success if ok else messages.error)(request, message)
+    return _admin_page('bookings')
 
 def admin_cancel_booking(request, booking_id):
     """
@@ -796,7 +825,11 @@ def admin_cancel_booking(request, booking_id):
  
     if booking.booking_status not in ['Pending', 'Approved']:
         messages.error(request, 'This booking cannot be cancelled.')
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
+
+    if booking.checked_in_at:
+        messages.error(request, f'Booking #{booking_id} is already checked in, so it cannot be cancelled.')
+        return _admin_page('bookings')
  
     booking.booking_status = 'Cancelled'
     booking.save()
@@ -804,7 +837,7 @@ def admin_cancel_booking(request, booking_id):
     # Google Calendar: remove the event if this booking had been approved
     removed, calendar_message = google_calendar.remove_booking_event(booking)
     messages.success(request, f'Booking #{booking_id} has been cancelled. {calendar_message}'.strip())
-    return redirect('admin_dashboard')
+    return _admin_page('bookings')
  
  
 # ─── damage management ───────────────────────────────────────────
@@ -815,7 +848,7 @@ def add_damage(request, booking_id):
         return redirect('login')
 
     if request.method != 'POST':
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
 
     booking = get_object_or_404(Booking, pk=booking_id)
     description = request.POST.get('description', '').strip()
@@ -823,7 +856,7 @@ def add_damage(request, booking_id):
 
     if not description:
         messages.error(request, 'Description is required.')
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
 
     try:
         fee = Decimal(fee)
@@ -831,7 +864,7 @@ def add_damage(request, booking_id):
             raise ValueError
     except Exception:
         messages.error(request, 'Enter a valid fee.')
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
 
     Damage.objects.create(
         booking=booking,
@@ -841,7 +874,7 @@ def add_damage(request, booking_id):
     )
 
     messages.success(request, f'Damage report filed for Booking #{booking_id}.')
-    return redirect('admin_dashboard')
+    return _admin_page('bookings')
 
 def no_damage(request, booking_id):
     """
@@ -856,7 +889,7 @@ def no_damage(request, booking_id):
 
     if booking.booking_status != 'Completed':
         messages.error(request, 'Only completed bookings can be marked.')
-        return redirect('admin_dashboard')
+        return _admin_page('bookings')
 
     Damage.objects.get_or_create(
         booking=booking,
@@ -868,7 +901,7 @@ def no_damage(request, booking_id):
     )
 
     messages.success(request, f'Booking #{booking_id} marked as no damage.')
-    return redirect('admin_dashboard')
+    return _admin_page('bookings')
 
 def settle_damage(request, damage_id):
     admin = get_logged_in_admin(request) 
@@ -879,12 +912,12 @@ def settle_damage(request, damage_id):
 
     if damage.status != 'Pending':
         messages.error(request, 'This damage report is already settled.')
-        return redirect('admin_dashboard')
+        return _admin_page('damages')
 
     damage.status = 'Settled'
     damage.save()
     messages.success(request, f'Damage #{damage_id} marked as settled.')
-    return redirect('admin_dashboard')
+    return _admin_page('damages')
 
 def admin_customer_history(request, customer_id):
     admin = get_logged_in_admin(request)
@@ -934,7 +967,7 @@ def admin_update_profile(request):
 
         if Admin.objects.filter(username=username).exclude(pk=admin_id).exists():
             messages.error(request, 'Username already taken.')
-            return redirect('admin_dashboard')
+            return _admin_page('profile')
 
         admin.firstname = firstname
         admin.lastname  = lastname
@@ -943,13 +976,13 @@ def admin_update_profile(request):
         if new_password:
             if new_password != confirm_password:
                 messages.error(request, 'Passwords do not match.')
-                return redirect('admin_dashboard')
+                return _admin_page('profile')
             admin.password = new_password
 
         admin.save()
         messages.success(request, 'Profile updated successfully.')
 
-    return redirect('admin_dashboard')
+    return _admin_page('profile')
 
 def get_paypal_access_token():
     """Get PayPal access token using client credentials."""
@@ -1335,7 +1368,6 @@ def checkin_verify(request):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    checkin.complete_finished_sessions()
     raw = str(_json_body(request).get('code', '')).strip()
     booking = checkin.find_booking(checkin.normalize_code(raw))
     if not booking:
@@ -1381,13 +1413,12 @@ def checkin_sessions(request):
     """GET: courts in use right now, with their end times (for the countdowns)."""
     if not get_logged_in_admin(request):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    completed = checkin.complete_finished_sessions()
     sessions = [checkin.booking_summary(b) for b in checkin.active_sessions()]
-    return JsonResponse({'sessions': sessions, 'completed': completed, 'now': timezone.now().isoformat()})
+    return JsonResponse({'sessions': sessions, 'now': timezone.now().isoformat()})
 
 
 def checkin_end(request):
-    """POST {code}: customer is done early - stop the countdown and complete the booking."""
+    """POST {code}: "End playing time now" - stop the countdown (staff then click Complete)."""
     if not get_logged_in_admin(request):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
     if request.method != 'POST':

@@ -151,3 +151,10 @@ EMAILJS_PRIVATE_KEY = os.environ.get('EMAILJS_PRIVATE_KEY', '')
 GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REDIRECT_URI  = os.environ.get('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:8000/oauth2callback/')
+
+# Google Gemini – landing page chatbot (Labra Assistant). Server-side only.
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL   = os.environ.get('GEMINI_MODEL', 'gemini-flash-lite-latest')
+# Typed questions per visitor per hour, and AI answers per day for the whole site
+CHATBOT_HOURLY_LIMIT   = int(os.environ.get('CHATBOT_HOURLY_LIMIT', '20'))
+CHATBOT_DAILY_AI_LIMIT = int(os.environ.get('CHATBOT_DAILY_AI_LIMIT', '200'))

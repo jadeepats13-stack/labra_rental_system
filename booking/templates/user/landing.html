@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/user/landing.css' %}">
+    <link rel="stylesheet" href="{% static 'css/user/chatbot.css' %}?v=1">
 </head>
 
 <body>
@@ -38,7 +39,7 @@
 
     <!-- ── Hero ─────────────────────────────────────────────────── -->
     <section class="hero">
-        <img class="hero-photo" src="{% static 'images/dronview.png' %}" alt="Aerial view of the LA court at Labra Basketball Court">
+        <img class="hero-photo" src="{% static 'images/c1.png' %}" alt="Aerial view of the LA court at Labra Basketball Court">
         <div class="hero-inner">
             <div class="hero-copy">
                 <h1>Book the LA Court<br>by the hour.</h1>
@@ -221,7 +222,10 @@
         </div>
     </div>
 
+    {% include 'user/chatbot.html' %}
+
     <script src="{% static 'js/user/landing.js' %}?v=2"></script>
+    <script src="{% static 'js/user/chatbot.js' %}?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script>
         (function () {

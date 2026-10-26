@@ -1,68 +1,75 @@
 {% load static %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_profile.css' %}">
-</head>
-<div class="page-content" id="page-profile">
-    <div class="section-header">
-        <div class="section-title">Edit Profile</div>
+<section class="page-content" id="page-profile" tabindex="-1" aria-labelledby="profileTitle">
+    <div class="page-intro">
+        <h2 class="section-title" id="profileTitle">Edit Profile</h2>
+        <p>Your account details. Your email is used for booking confirmation emails.</p>
     </div>
 
     <div class="profile-grid">
         <div class="profile-avatar-card">
-            <div class="profile-avatar-large">
+            <div class="profile-avatar-large" aria-hidden="true">
                 {% if customer.profile_picture %}
-                <img src="{{ customer.profile_picture.url }}" alt="Profile">
+                <img src="{{ customer.profile_picture.url }}" alt="">
                 {% else %}
                 {{ customer.firstname|first }}{{ customer.lastname|first }}
                 {% endif %}
             </div>
-            <div class="profile-name">{{ customer.firstname }} {{ customer.lastname }}</div>
-            <div class="profile-username">@{{ customer.username }}</div>
+            <div>
+                <div class="profile-name">{{ customer.firstname }} {{ customer.lastname }}</div>
+                <div class="profile-username">@{{ customer.username }}</div>
+                {% if customer.email %}<div class="profile-username">{{ customer.email }}</div>{% endif %}
+            </div>
         </div>
 
-        <form method="POST" action="{% url 'update_profile' %}">
+        <form method="POST" action="{% url 'update_profile' %}" class="form-card profile-form">
             {% csrf_token %}
-            <div class="form-card" style="height:100%;">
+            <fieldset class="profile-fieldset">
+                <legend class="card-title">Personal details</legend>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">First Name</label>
-                        <input type="text" name="firstname" class="form-control" value="{{ customer.firstname }}"
-                            required>
+                        <label class="form-label" for="pfFirstname">First name</label>
+                        <input type="text" name="firstname" id="pfFirstname" class="form-control" value="{{ customer.firstname }}"
+                            autocomplete="given-name" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" name="lastname" class="form-control" value="{{ customer.lastname }}"
-                            required>
+                        <label class="form-label" for="pfLastname">Last name</label>
+                        <input type="text" name="lastname" id="pfLastname" class="form-control" value="{{ customer.lastname }}"
+                            autocomplete="family-name" required>
                     </div>
-                    <div class="form-group full">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" value="{{ customer.username }}"
-                            required>
+                    <div class="form-group">
+                        <label class="form-label" for="pfUsername">Username</label>
+                        <input type="text" name="username" id="pfUsername" class="form-control" value="{{ customer.username }}"
+                            autocomplete="username" required>
                     </div>
-                    <div class="form-group full">
-                        <label class="form-label">Email <span style="color:var(--gray);font-size:11px;">(for booking
-                                confirmation emails)</span></label>
-                        <input type="email" name="email" class="form-control" value="{{ customer.email }}"
-                            placeholder="you@example.com">
-                    </div>
-                    <div class="form-group full">
-                        <label class="form-label">New Password <span style="color:var(--gray);font-size:11px;">(leave
-                                blank to keep
-                                current)</span></label>
-                        <input type="password" name="new_password" class="form-control"
-                            placeholder="Enter new password">
-                    </div>
-                    <div class="form-group full">
-                        <label class="form-label">Confirm Password</label>
-                        <input type="password" name="confirm_password" class="form-control"
-                            placeholder="Confirm new password">
+                    <div class="form-group">
+                        <label class="form-label" for="pfEmail">Email</label>
+                        <input type="email" name="email" id="pfEmail" class="form-control" value="{{ customer.email }}"
+                            placeholder="you@example.com" autocomplete="email" aria-describedby="pfEmailHint">
+                        <span class="form-hint" id="pfEmailHint">For booking confirmation emails.</span>
                     </div>
                 </div>
-                <div style="margin-top:24px;">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+            </fieldset>
+
+            <fieldset class="profile-fieldset">
+                <legend class="card-title">Change password</legend>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="pfNewPassword">New password</label>
+                        <input type="password" name="new_password" id="pfNewPassword" class="form-control"
+                            autocomplete="new-password" aria-describedby="pfPasswordHint">
+                        <span class="form-hint" id="pfPasswordHint">Leave blank to keep your current password.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="pfConfirmPassword">Confirm new password</label>
+                        <input type="password" name="confirm_password" id="pfConfirmPassword" class="form-control"
+                            autocomplete="new-password">
+                    </div>
                 </div>
+            </fieldset>
+
+            <div class="profile-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
     </div>
-</div>
+</section>

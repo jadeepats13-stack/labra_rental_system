@@ -1,12 +1,12 @@
 {% load static %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_payment_modal.css' %}">
-
-</head>
 <div class="modal-overlay" id="paymentModal">
-    <div class="modal">
-        <div class="modal-title">Complete Payment</div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <div class="modal-head">
+            <h2 class="modal-title" id="paymentModalTitle">Complete Payment</h2>
+            <button type="button" class="modal-x" onclick="closePaymentModal()" aria-label="Close">
+                <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </div>
 
         <div class="summary-card" id="paymentSummary">
             <div class="summary-row"><span class="label">Booking ID</span><span class="value" id="sum-booking">#—</span>
@@ -24,17 +24,23 @@
             <input type="hidden" name="booking_id" id="pay-booking-id">
             <input type="hidden" name="payment_method" value="Cash">
 
-            <label class="form-label" style="margin-bottom:10px; display:block;">Payment Method</label>
-            <div class="payment-methods">
-                <label class="payment-method" onclick="selectPayMethod(this)">
-                    <input type="radio" name="payment_method" value="Cash" style="display:none;" required>
-                    <span class="payment-method-name">Cash</span>
-                </label>
-                <label class="payment-method" onclick="selectPayMethod(this)">
-                    <input type="radio" name="payment_method" value="Online" style="display:none;">
-                    <span class="payment-method-name">Online Payment</span>
-                </label>
-            </div>
+            <fieldset class="pay-fieldset">
+                <legend class="form-label">Payment method</legend>
+                <div class="payment-methods">
+                    <label class="payment-method" onclick="selectPayMethod(this)">
+                        <input type="radio" name="payment_method" value="Cash" class="visually-hidden" required>
+                        <svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg>
+                        <span class="payment-method-name">Cash</span>
+                        <span class="payment-method-desc">Pay at the court</span>
+                    </label>
+                    <label class="payment-method" onclick="selectPayMethod(this)">
+                        <input type="radio" name="payment_method" value="Online" class="visually-hidden">
+                        <svg class="icon" aria-hidden="true"><use href="#i-card"/></svg>
+                        <span class="payment-method-name">Online Payment</span>
+                        <span class="payment-method-desc">Pay via PayPal</span>
+                    </label>
+                </div>
+            </fieldset>
 
             <div id="dashboard-paypal-container" style="display:none; margin: 16px 0;"></div>
 

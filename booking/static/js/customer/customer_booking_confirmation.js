@@ -21,7 +21,8 @@ function selectPaymentMethod(element, method) {
     }
 }
 
-paypal.Buttons({
+// If the PayPal script couldn't load, Cash still works and the rest of the page keeps running
+if (window.paypal) paypal.Buttons({
     createOrder: async function () {
         const res = await fetch('/create_paypal_order/', {
             method: 'POST',

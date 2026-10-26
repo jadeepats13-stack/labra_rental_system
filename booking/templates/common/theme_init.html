@@ -1,0 +1,14 @@
+{% comment %}
+Put first in <head>. Applies the saved theme before anything paints, so there's no flash of the other theme.
+   Use: {% include 'common/theme_init.html' with key='labra-theme-admin' default='light' %}
+{% endcomment %}
+<script>
+    (function () {
+        var theme = '{{ default }}';
+        try {
+            var saved = localStorage.getItem('{{ key }}');
+            if (saved === 'dark' || saved === 'light') theme = saved;
+        } catch (e) { /* storage blocked: keep the default */ }
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>

@@ -9,8 +9,11 @@ Rules (agreed with the client):
   * Check-in is allowed from 15 minutes before the start time until the end
     time, on the booking date, for Approved and PAID bookings only.
   * A booking can be checked in only once (enforced in the database).
-  * Playing time ends at the reserved end time, even if the customer is late.
-  * When the time is up the booking is marked Completed automatically.
+  * Playing time ends at the reserved end time, even if the customer is late,
+    or earlier when staff click "End playing time now".
+  * Workflow: Approved -> Playing (countdown) -> Time ended -> Completed.
+    The booking stays Approved while playing and after the time ends; only
+    staff clicking Complete (allowed once the time has ended) sets Completed.
 """
 import re
 import secrets
@@ -100,6 +103,7 @@ def booking_summary(booking):
         'total': f'{booking.total_price:,.2f}',
         'paid': is_paid(booking),
         'status': booking.booking_status,
+        'stage': stage(booking),
         'checked_in_at': _local(booking.checked_in_at).strftime('%I:%M %p').lstrip('0') if booking.checked_in_at else '',
         'checked_in_by': (booking.checked_in_by.firstname if booking.checked_in_by else ''),
         'ends_at': booking.session_ends_at.isoformat() if booking.session_ends_at else '',
@@ -119,8 +123,10 @@ def check(booking, now=None):
         checked = _local(booking.checked_in_at).strftime('%I:%M %p').lstrip('0')
         if booking.session_ends_at and booking.session_ends_at <= now:
             ended = _local(booking.session_ends_at).strftime('%I:%M %p').lstrip('0')
+            done = ('' if booking.booking_status == 'Completed'
+                    else ' Mark it Completed in Manage Bookings.')
             return False, 'already', (f'This booking is finished: checked in at {checked}, '
-                                      f'playing time ended at {ended}. It cannot be started again.')
+                                      f'playing time ended at {ended}. It cannot be started again.{done}')
         return False, 'already', (f'Already checked in at {checked} and playing now. '
                                   'Playing time cannot be started twice.')
     if booking.booking_status != 'Approved':
@@ -190,12 +196,49 @@ def record_cash_payment(booking):
     return payment
 
 
-def complete_finished_sessions(now=None):
-    """Mark bookings Completed once their playing time is over. Returns the count."""
+# ─── Stages: Approved -> Playing -> Time ended -> Completed ───────
+
+PLAYING = 'Playing'
+TIME_ENDED = 'Time ended'
+
+
+def stage(booking, now=None):
+    """What staff and customers see as the booking's status."""
     now = now or timezone.now()
-    return (Booking.objects
-            .filter(booking_status='Approved', checked_in_at__isnull=False, session_ends_at__lte=now)
-            .update(booking_status='Completed'))
+    if booking.booking_status == 'Approved' and booking.checked_in_at and booking.session_ends_at:
+        return PLAYING if booking.session_ends_at > now else TIME_ENDED
+    return booking.booking_status
+
+
+def can_complete(booking, now=None):
+    """Complete is allowed only after the playing time has ended."""
+    return stage(booking, now) == TIME_ENDED
+
+
+def complete_booking(booking, now=None):
+    """
+    Staff clicked Complete. Allowed only once the playing time has ended
+    (never while the countdown is running). Safe against double clicks.
+    Returns (ok, message).
+    """
+    now = now or timezone.now()
+    current = stage(booking, now)
+    if current == PLAYING:
+        return False, (f'Booking #{booking.booking_id} is still playing. End the playing time first '
+                       '(Check-in page) or wait for the countdown to finish.')
+    if current != TIME_ENDED:
+        if booking.booking_status == 'Approved':
+            return False, (f'Booking #{booking.booking_id} has not been checked in yet. '
+                           'It can be completed only after its playing time has ended.')
+        return False, 'Only bookings whose playing time has ended can be marked as completed.'
+    updated = (Booking.objects
+               .filter(pk=booking.pk, booking_status='Approved',
+                       checked_in_at__isnull=False, session_ends_at__lte=now)
+               .update(booking_status='Completed'))
+    booking.refresh_from_db()
+    if not updated:
+        return False, 'This booking was already updated. Refresh the page and try again.'
+    return True, f'Booking #{booking.booking_id} marked as completed.'
 
 
 def active_sessions(now=None):
@@ -207,9 +250,10 @@ def active_sessions(now=None):
 
 def end_session_early(booking, now=None):
     """
-    The customer finished before their time was up: stop the countdown now
-    and mark the booking Completed. The rest of the slot becomes free for
-    new bookings. Safe against double clicks (only one update can succeed).
+    Staff clicked "End playing time now": stop the countdown now. The booking
+    becomes "Time ended" (still Approved) so staff can then click Complete in
+    Manage Bookings. The rest of the slot becomes free for new bookings.
+    Safe against double clicks (only one update can succeed).
     Returns (ok, reason, message).
     """
     now = now or timezone.now()
@@ -218,13 +262,14 @@ def end_session_early(booking, now=None):
     updated = (Booking.objects
                .filter(pk=booking.pk, booking_status='Approved',
                        checked_in_at__isnull=False, session_ends_at__gt=now)
-               .update(session_ends_at=now, booking_status='Completed'))
+               .update(session_ends_at=now))
     unused = booking.session_ends_at - now if booking.session_ends_at else None
     booking.refresh_from_db()
     if not updated:
         return False, 'already_ended', 'Playing time for this booking has already ended.'
     minutes = max(int(unused.total_seconds() // 60), 0) if unused else 0
     left = f'{minutes // 60} h {minutes % 60} min' if minutes >= 60 else f'{minutes} min'
-    return True, 'ended', (f"Playing time ended early at {_local(now).strftime('%I:%M %p').lstrip('0')} "
-                           f"({left} unused). The booking is now Completed.")
+    return True, 'ended', (f"Playing time for booking #{booking.booking_id} ended at "
+                           f"{_local(now).strftime('%I:%M %p').lstrip('0')} ({left} unused). "
+                           "You can now mark it Completed in Manage Bookings.")
 

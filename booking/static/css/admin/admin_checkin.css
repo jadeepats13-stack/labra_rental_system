@@ -31,7 +31,7 @@
 }
 
 .ci-tab.active {
-    color: var(--sb-accent);
+    color: var(--accent-text);
     border-bottom-color: var(--sb-accent);
 }
 
@@ -102,7 +102,7 @@
 }
 
 .ci-ok { background: var(--green-bg); color: var(--green); }
-.ci-warn { background: var(--yellow-bg); color: #854d0e; }
+.ci-warn { background: var(--yellow-bg); color: var(--yellow); }
 .ci-error { background: var(--red-bg); color: var(--red); }
 .ci-info { background: var(--blue-bg); color: var(--blue); }
 
@@ -161,6 +161,10 @@
     gap: 14px;
 }
 
+.ci-sessions > .ci-empty {
+    grid-column: 1 / -1;
+}
+
 .ci-session {
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -202,17 +206,42 @@
 /* ── Sidebar badges ── */
 .nav-badge {
     margin-left: auto;
-    min-width: 20px;
+    min-width: 22px;
     height: 20px;
-    padding: 0 6px;
-    border-radius: 10px;
-    background: #ef4444;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #dc2626;
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 20px;
     text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 
 .nav-badge[hidden] { display: none; }
-.nav-badge-live { background: var(--green); }
+.nav-badge-live { background: var(--green-solid); }
+
+/* ── Manage Bookings: Playing countdown / Time ended ──
+   Shares the .status pill look from admin_dashbo.css. */
+.stage-live .stage-left {
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.stage-live .stage-left:empty {
+    display: none;
+}
+
+.stage-live.ended {
+    background: var(--purple-bg);
+    border-color: var(--purple-border);
+    color: var(--purple);
+}
+
+#bookingsTable tr.row-flash td {
+    background: var(--green-bg);
+    transition: background 0.6s;
+}

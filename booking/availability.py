@@ -5,7 +5,9 @@ Used by the customer availability calendar, the greyed-out time dropdowns,
 and the customer dashboard ("This Week" strip, LA Court card).
 
 Opening hours match the booking form: 8:00 AM to 10:00 PM, in 30-minute steps.
-A slot is taken when a Pending or Approved booking overlaps it.
+A slot is taken when a Pending or Approved booking overlaps it, unless its
+playing time has already ended (e.g. staff ended it early): that booking only
+waits for staff to click Complete, so the rest of its slot is free again.
 """
 from datetime import date, datetime, time, timedelta
 
@@ -20,16 +22,22 @@ OPEN_HOURS_PER_DAY = CLOSE_HOUR - OPEN_HOUR          # 14
 ACTIVE_STATUSES = ('Pending', 'Approved')
 
 
+def holding_slots(queryset, now=None):
+    """Leave out bookings whose playing time has already ended."""
+    now = now or timezone.now()
+    return queryset.exclude(checked_in_at__isnull=False, session_ends_at__lte=now)
+
+
 def _minutes(t):
     return t.hour * 60 + t.minute
 
 
 def taken_bookings(start_date, end_date):
     """Pending/Approved bookings from start_date to end_date (inclusive)."""
-    return (Booking.objects
-            .filter(booking_date__gte=start_date, booking_date__lte=end_date,
-                    booking_status__in=ACTIVE_STATUSES)
-            .order_by('booking_date', 'start_time'))
+    return holding_slots(Booking.objects
+                         .filter(booking_date__gte=start_date, booking_date__lte=end_date,
+                                 booking_status__in=ACTIVE_STATUSES)
+                         .order_by('booking_date', 'start_time'))
 
 
 def free_hours(day, bookings=None, now=None):
@@ -101,11 +109,11 @@ def countdown_text(booking, now=None):
 def next_game(customer, now=None):
     """The customer's next Pending/Approved booking that hasn't ended yet."""
     now = now or timezone.localtime()
-    candidates = (Booking.objects
-                  .filter(customer=customer, booking_status__in=ACTIVE_STATUSES,
-                          booking_date__gte=now.date())
-                  .select_related('court')
-                  .order_by('booking_date', 'start_time'))
+    candidates = holding_slots(Booking.objects
+                               .filter(customer=customer, booking_status__in=ACTIVE_STATUSES,
+                                       booking_date__gte=now.date())
+                               .select_related('court')
+                               .order_by('booking_date', 'start_time'))
     for b in candidates:
         if b.booking_date > now.date() or b.end_time > now.time():
             return b

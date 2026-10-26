@@ -5,115 +5,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'common/theme_init.html' with key='labra-theme-admin' default='light' %}
     <title>Admin Dashboard – Labra Basketball Court Rental</title>
-    <link rel="stylesheet" href="{% static 'css/admin/admin_dashbo.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin/admin_dashbo.css' %}?v=7">
     <link rel="stylesheet" href="{% static 'css/common/table_filter.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin/admin_schedule.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin/admin_checkin.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin/admin_schedule.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/admin/admin_checkin.css' %}?v=4">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
 </head>
 
 <body>
 
-    <button class="sidebar-toggle" id="sidebarToggle">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
+    {# Icon sprite (Lucide-style, 24px grid, 1.75 stroke). Use: <svg class="icon"><use href="#i-name"/></svg> #}
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+        <symbol id="i-court" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="i-bookings" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></symbol>
+        <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+        <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+        <symbol id="i-archive" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+        <symbol id="i-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+    </svg>
+
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="layout">
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar" id="sidebar" aria-label="Admin navigation">
 
             <div class="sidebar-brand">
+                <div class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-court"/></svg></div>
                 <div class="brand-text">
                     <span class="brand-name">Labra Basketball Court</span>
                     <span class="brand-sub">Admin Panel</span>
                 </div>
-            </div>
-
-            <div class="sidebar-admin">
-                <div class="admin-avatar">
-                    {{ logged_admin.firstname|first }}{{ logged_admin.lastname|first }}
-                </div>
-                <div class="admin-info">
-                    <strong>{{ logged_admin.firstname }} {{ logged_admin.lastname }}</strong>
-                    <span>@{{ logged_admin.username }}</span>
-                </div>
+                <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+                    <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
                 <div class="nav-section-label">Overview</div>
-                <button class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')">
+                <button type="button" class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')" aria-current="page">
+                    <svg class="icon" aria-hidden="true"><use href="#i-dashboard"/></svg>
                     Dashboard
                 </button>
 
                 <div class="nav-section-label">Management</div>
-                <button class="nav-link" data-page="courts" onclick="showPage('courts')">
+                <button type="button" class="nav-link" data-page="courts" onclick="showPage('courts')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-court"/></svg>
                     Manage Court
                 </button>
-                <button class="nav-link" data-page="bookings" onclick="showPage('bookings')">
+                <button type="button" class="nav-link" data-page="bookings" onclick="showPage('bookings')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-bookings"/></svg>
                     Manage Bookings
                     {% if pending_bookings %}<span class="nav-badge" title="{{ pending_bookings }} waiting for approval">{{ pending_bookings }}</span>{% endif %}
                 </button>
-                <button class="nav-link" data-page="schedule" onclick="showPage('schedule')">
+                <button type="button" class="nav-link" data-page="schedule" onclick="showPage('schedule')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>
                     Court Schedule
                 </button>
-                <button class="nav-link" data-page="checkin" onclick="showPage('checkin')">
+                <button type="button" class="nav-link" data-page="checkin" onclick="showPage('checkin')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg>
                     Check-in
                     <span class="nav-badge nav-badge-live" id="badgeCheckin" title="Playing now"{% if not badge_playing %} hidden{% endif %}>{{ badge_playing }}</span>
                 </button>
-                <button class="nav-link" data-page="customers" onclick="showPage('customers')">
+                <button type="button" class="nav-link" data-page="customers" onclick="showPage('customers')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>
                     Manage Customers
                 </button>
 
                 <div class="nav-section-label">Finance</div>
-                <button class="nav-link" data-page="payments" onclick="showPage('payments')">
+                <button type="button" class="nav-link" data-page="payments" onclick="showPage('payments')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-card"/></svg>
                     Payments
                 </button>
-                <button class="nav-link" data-page="damages" onclick="showPage('damages')">
+                <button type="button" class="nav-link" data-page="damages" onclick="showPage('damages')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
                     Damage Reports
                     {% if badge_damages %}<span class="nav-badge" title="{{ badge_damages }} not settled">{{ badge_damages }}</span>{% endif %}
                 </button>
 
                 <div class="nav-section-label">Records</div>
-                <button class="nav-link" data-page="records" onclick="showPage('records')">
+                <button type="button" class="nav-link" data-page="records" onclick="showPage('records')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-archive"/></svg>
                     Booking Records
                 </button>
 
                 <div class="nav-section-label">Account</div>
-                <button class="nav-link" data-page="profile" onclick="showPage('profile')">
+                <button type="button" class="nav-link" data-page="profile" onclick="showPage('profile')">
+                    <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
                     Edit Profile
                 </button>
-                <a class="nav-link logout" href="{% url 'admin_logout' %}">
-                    Logout
-                </a>
             </nav>
 
             <div class="sidebar-footer">
-                Labra Basketball Court Rental System
+                <div class="sidebar-admin">
+                    <div class="admin-avatar" aria-hidden="true">
+                        {{ logged_admin.firstname|first }}{{ logged_admin.lastname|first }}
+                    </div>
+                    <div class="admin-info">
+                        <strong>{{ logged_admin.firstname }} {{ logged_admin.lastname }}</strong>
+                        <span>@{{ logged_admin.username }}</span>
+                    </div>
+                </div>
+                <a class="nav-link logout" href="{% url 'admin_logout' %}">
+                    <svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>
+                    Logout
+                </a>
             </div>
         </aside>
         <div class="main">
 
             <header class="header">
-                <div class="header-title" id="headerTitle">Dashboard</div>
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Open menu"
+                    aria-controls="sidebar" aria-expanded="false">
+                    <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+                </button>
+                <div class="header-title">
+                    {# Page name only; empty on Dashboard (its page heading already says so) #}
+                    <span class="header-current" id="headerTitle"></span>
+                </div>
                 <div class="header-right">
-                    <span class="header-date" id="headerDate"></span>
+                    <button type="button" class="btn btn-primary btn-sm header-action" id="headerCheckin"
+                        onclick="showPage('checkin'); focusPageHeading('checkin');">
+                        <svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg>
+                        <span>Check-in</span>
+                    </button>
+                    <span class="header-date">
+                        <svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+                        <span id="headerDate"></span>
+                    </span>
+                    {% include 'common/theme_toggle.html' with key='labra-theme-admin' %}
                 </div>
             </header>
 
-            <div class="content">
+            <main class="content" id="mainContent" tabindex="-1">
                 {% if messages %}
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
+                <div class="alert alert-{{ message.tags }}" role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
+                    <svg class="icon" aria-hidden="true"><use href="#{% if 'success' in message.tags %}i-check{% elif 'error' in message.tags or 'warning' in message.tags %}i-error{% else %}i-info{% endif %}"/></svg>
+                    <span class="alert-text">{{ message }}</span>
+                    <button type="button" class="alert-close" aria-label="Dismiss message">
+                        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+                    </button>
                 </div>
                 {% endfor %}
                 {% endif %}
                 <div class="page active" id="page-dashboard">
                     <div class="page-header">
-                        <h1 class="page-heading">Dashboard <span>Overview</span></h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Dashboard</h1>
+                            <p class="page-subtitle">Bookings, payments and court status at a glance.</p>
+                        </div>
                     </div>
 
                     <div class="stats-row">
@@ -122,37 +178,48 @@
                                 <div class="stat-label">Customers</div>
                                 <div class="stat-value">{{ total_customers }}</div>
                             </div>
+                            <div class="stat-icon blue" aria-hidden="true"><svg class="icon"><use href="#i-users"/></svg></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-body">
                                 <div class="stat-label">Courts</div>
                                 <div class="stat-value">{{ total_courts }}</div>
                             </div>
+                            <div class="stat-icon purple" aria-hidden="true"><svg class="icon"><use href="#i-court"/></svg></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-body">
                                 <div class="stat-label">Total Bookings</div>
                                 <div class="stat-value">{{ total_bookings }}</div>
                             </div>
+                            <div class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-bookings"/></svg></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-body">
-                                <div class="stat-label">Total Payments</div>
+                                <div class="stat-label">Payment Records</div>
                                 <div class="stat-value">{{ total_payments }}</div>
                             </div>
+                            <div class="stat-icon green" aria-hidden="true"><svg class="icon"><use href="#i-card"/></svg></div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card{% if pending_bookings %} is-attention{% endif %}">
                             <div class="stat-body">
-                                <div class="stat-label">Pending</div>
+                                <div class="stat-label">Pending Approval</div>
                                 <div class="stat-value">{{ pending_bookings }}</div>
+                                {% if pending_bookings %}
+                                <button type="button" class="stat-link" onclick="showPage('bookings')">
+                                    Review <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-arrow"/></svg>
+                                </button>
+                                {% endif %}
                             </div>
+                            <div class="stat-icon yellow" aria-hidden="true"><svg class="icon"><use href="#i-clock"/></svg></div>
                         </div>
                     </div>
 
+                    <div class="dash-grid">
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Recent Bookings</div>
-                            <button class="btn btn-outline btn-sm" onclick="showPage('bookings')">View All</button>
+                            <h2 class="section-title">Recent Bookings</h2>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="showPage('bookings')">View all</button>
                         </div>
                         <div class="table-wrap">
                             <table>
@@ -160,9 +227,8 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Customer</th>
-                                        <th>Court</th>
                                         <th>Date</th>
-                                        <th>Total</th>
+                                        <th class="num">Total</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -170,15 +236,14 @@
                                     {% for b in recent_bookings %}
                                     <tr>
                                         <td class="mono">{{ b.booking_id }}</td>
-                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}</td>
-                                        <td>{{ b.court.court_name|default:'LA Court' }}</td>
+                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}<span class="cell-sub">{{ b.court.court_name|default:'LA Court' }}</span></td>
                                         <td>{{ b.booking_date }}</td>
-                                        <td class="mono">₱{{ b.total_price }}</td>
-                                        <td>{{ b.booking_status }}</td>
+                                        <td class="mono num">₱{{ b.total_price }}</td>
+                                        <td><span class="status status-{{ b.stage|slugify }}">{{ b.stage }}</span></td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="5">
                                             <div class="empty-state">
                                                 <p>No bookings yet.</p>
                                             </div>
@@ -190,16 +255,20 @@
                         </div>
                     </div>
 
+                    <div class="dash-col">
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Upcoming Bookings <span class="upcoming-source">from Google Calendar</span></div>
+                            <h2 class="section-title">Upcoming Bookings <span class="upcoming-source">from Google Calendar</span></h2>
                             {% if google_connection %}
-                            <button class="btn btn-outline btn-sm" onclick="showPage('schedule')">View full schedule</button>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="showPage('schedule')">View full schedule</button>
                             {% endif %}
                         </div>
                         {% if google_connection %}
                         {% if upcoming_error %}
-                        <div class="upcoming-empty">⚠️ {{ upcoming_error }}</div>
+                        <div class="upcoming-empty is-error" role="alert">
+                            <svg class="icon" aria-hidden="true"><use href="#i-error"/></svg>
+                            <span>{{ upcoming_error }}</span>
+                        </div>
                         {% else %}
                         <ul class="upcoming-list">
                             {% for e in upcoming_events %}
@@ -227,15 +296,15 @@
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Court Status</div>
-                            <button class="btn btn-outline btn-sm" onclick="showPage('courts')">Manage</button>
+                            <h2 class="section-title">Court Status</h2>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="showPage('courts')">Manage</button>
                         </div>
                         <div class="table-wrap">
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Court</th>
-                                        <th>Rate / Hour</th>
+                                        <th class="num">Rate / Hour</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -243,8 +312,8 @@
                                     {% for court in courts %}
                                     <tr>
                                         <td>{{ court.court_name|default:'LA Court' }}</td>
-                                        <td class="mono">₱{{ court.rate_per_hour }}</td>
-                                        <td>{{ court.court_status }}</td>
+                                        <td class="mono num">₱{{ court.rate_per_hour }}</td>
+                                        <td><span class="status status-{{ court.court_status|slugify }}">{{ court.court_status }}</span></td>
                                     </tr>
                                     {% empty %}
                                     <tr>
@@ -259,16 +328,21 @@
                             </table>
                         </div>
                     </div>
+                    </div>{# /.dash-col #}
+                    </div>{# /.dash-grid #}
                 </div>
 
                 <div class="page" id="page-courts">
                     <div class="page-header">
-                        <h1 class="page-heading">Manage Court</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Manage Court</h1>
+                            <p class="page-subtitle">Update the court's name, hourly rate, photo and availability.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">LA Court</div>
+                            <h2 class="section-title">LA Court</h2>
                         </div>
                         <div class="table-wrap">
                             <table>
@@ -277,7 +351,7 @@
                                         <th>Court ID</th>
                                         <th>Image</th>
                                         <th>Court Name</th>
-                                        <th>Rate / Hour</th>
+                                        <th class="num">Rate / Hour</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -288,20 +362,21 @@
                                         <td class="mono">#{{ court.court_id }}</td>
                                         <td>
                                             {% if court.court_image %}
-                                            <img src="{{ court.court_image.url }}" alt="Court"
-                                                style="width:64px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+                                            <img src="{{ court.court_image.url }}" alt="Photo of {{ court.court_name }}"
+                                                class="court-thumb" width="72" height="48" loading="lazy">
                                             {% else %}
-                                            <div
-                                                style="width:64px;height:44px;background:var(--bg);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);">
-                                                No Image</div>
+                                            <span class="court-thumb-empty" title="No image uploaded">
+                                                <svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>
+                                                <span class="visually-hidden">No image</span>
+                                            </span>
                                             {% endif %}
                                         </td>
                                         <td>{{ court.court_name }}</td>
-                                        <td class="mono">₱{{ court.rate_per_hour }}</td>
-                                        <td>{{ court.court_status }}</td>
+                                        <td class="mono num">₱{{ court.rate_per_hour }}</td>
+                                        <td><span class="status status-{{ court.court_status|slugify }}">{{ court.court_status }}</span></td>
                                         <td>
                                             <div class="btn-group">
-                                                <button class="btn btn-outline btn-sm" onclick="openEditModal(
+                                                <button type="button" class="btn btn-outline btn-sm" onclick="openEditModal(
                                                     '{{ court.court_id }}',
                                                     '{{ court.court_name|escapejs }}',
                                                     '{{ court.rate_per_hour }}',
@@ -326,33 +401,34 @@
                 </div>
 
                 <div class="modal-overlay" id="editCourtModal">
-                    <div class="modal">
-                        <div class="modal-title">Edit Court</div>
+                    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editCourtTitle">
+                        <h2 class="modal-title" id="editCourtTitle">Edit Court</h2>
                         <form method="POST" action="" id="editCourtForm" enctype="multipart/form-data">
                             {% csrf_token %}
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label class="form-label">Court Name</label>
+                                    <label class="form-label" for="editCourtName">Court Name</label>
                                     <input type="text" name="court_name" id="editCourtName" class="form-control"
                                         required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Rate Per Hour (₱)</label>
+                                    <label class="form-label" for="editCourtRate">Rate Per Hour (₱)</label>
                                     <input type="number" name="rate_per_hour" id="editCourtRate" class="form-control"
-                                        min="1" step="0.01" required>
+                                        min="1" step="0.01" inputmode="decimal" required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Court Status</label>
+                                    <label class="form-label" for="editCourtStatus">Court Status</label>
                                     <select name="court_status" id="editCourtStatus" class="form-control">
                                         <option value="Available">Available</option>
                                         <option value="Maintenance">Maintenance</option>
                                     </select>
+                                    <span class="form-hint">Customers can't book the court while it is under Maintenance.</span>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Court Image <span
-                                            style="font-size:11px;color:var(--text-muted);">(leave blank to keep
-                                            current)</span></label>
-                                    <input type="file" name="court_image" class="form-control" accept="image/*">
+                                    <label class="form-label" for="editCourtImage">Court Image</label>
+                                    <input type="file" name="court_image" id="editCourtImage" class="form-control"
+                                        accept="image/*" aria-describedby="editCourtImageHint">
+                                    <span class="form-hint" id="editCourtImageHint">Leave blank to keep the current image.</span>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -365,20 +441,20 @@
                 </div>
 
                 <div class="modal-overlay" id="damageModal">
-                    <div class="modal">
-                        <div class="modal-title">File Damage Report</div>
+                    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="damageTitle">
+                        <h2 class="modal-title" id="damageTitle">File Damage Report</h2>
                         <form method="POST" action="" id="damageForm">
                             {% csrf_token %}
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label class="form-label">Description</label>
-                                    <textarea name="description" class="form-control" rows="3"
-                                        placeholder="Describe the damage..." required></textarea>
+                                    <label class="form-label" for="damageDescription">Description</label>
+                                    <textarea name="description" id="damageDescription" class="form-control" rows="3"
+                                        placeholder="What was damaged and how?" required></textarea>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Fee (₱)</label>
-                                    <input type="number" name="fee" class="form-control" placeholder="500.00" min="1"
-                                        step="0.01" required>
+                                    <label class="form-label" for="damageFee">Fee (₱)</label>
+                                    <input type="number" name="fee" id="damageFee" class="form-control" placeholder="500.00" min="1"
+                                        step="0.01" inputmode="decimal" required>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -392,16 +468,19 @@
 
                 <div class="page" id="page-bookings">
                     <div class="page-header">
-                        <h1 class="page-heading">Manage Bookings</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Manage Bookings</h1>
+                            <p class="page-subtitle">Approve, complete or cancel customer bookings, and record damage after play.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">All Bookings</div>
+                            <h2 class="section-title">All Bookings</h2>
                         </div>
                         <div class="table-filter" data-table="bookingsTable">
-                            <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or customer">
-                            <select class="form-control" data-filter="status" aria-label="Status"><option value="">Status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>
+                            <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or customer" aria-label="Search bookings">
+                            <select class="form-control" data-filter="status" aria-label="Status"><option value="">Status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Playing">Playing</option><option value="Time ended">Time ended</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>
                             <select class="form-control" data-filter="method" aria-label="Payment method"><option value="">Payment method: All</option><option value="Cash">Cash</option><option value="Online">Online</option><option value="None">None</option></select>
                             <span class="filter-label">From</span>
                             <input type="date" class="form-control" data-filter="from" aria-label="From date">
@@ -410,39 +489,44 @@
                             <span data-filter="count"></span>
                         </div>
                         <div class="table-wrap">
-                            <table id="bookingsTable">
+                            <table id="bookingsTable" data-server-now="{% now 'c' %}">
                                 <thead>
                                     <tr>
                                         <th>#</th>
                                         <th>Customer</th>
-                                        <th>Court</th>
                                         <th>Date</th>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                        <th>Total</th>
-                                        <th>Payment Method</th>
+                                        <th>Time</th>
+                                        <th class="num">Total</th>
+                                        <th>Payment</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for b in all_bookings %}
-                                    <tr data-search="{{ b.booking_id }} {{ b.customer.firstname }} {{ b.customer.lastname }} {{ b.customer.username }}" data-status="{{ b.booking_status }}" data-method="{% if b.payment %}{{ b.payment.payment_method }}{% else %}None{% endif %}" data-date="{{ b.booking_date|date:'Y-m-d' }}">
+                                    <tr data-search="{{ b.booking_id }} {{ b.customer.firstname }} {{ b.customer.lastname }} {{ b.customer.username }}" data-status="{{ b.stage }}" data-method="{% if b.payment %}{{ b.payment.payment_method }}{% else %}None{% endif %}" data-date="{{ b.booking_date|date:'Y-m-d' }}">
                                         <td class="mono">{{ b.booking_id }}</td>
-                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}</td>
-                                        <td>{{ b.court.court_name|default:'LA Court' }}</td>
+                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}<span class="cell-sub">{{ b.court.court_name|default:'LA Court' }}</span></td>
                                         <td>{{ b.booking_date }}</td>
-                                        <td class="mono">{{ b.start_time|time:"H:i" }}</td>
-                                        <td class="mono">{{ b.end_time|time:"H:i" }}</td>
-                                        <td class="mono">₱{{ b.total_price }}</td>
+                                        <td class="mono">{{ b.start_time|time:"H:i" }}–{{ b.end_time|time:"H:i" }}</td>
+                                        <td class="mono num">₱{{ b.total_price }}</td>
                                         <td>
                                             {% if b.payment %}
                                             {{ b.payment.payment_method|default:"—" }}
                                             {% else %}
-                                            —
+                                            <span class="text-muted">—</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ b.booking_status }}</td>
+                                        <td>
+                                            {% if b.stage == 'Playing' %}
+                                            <span class="stage-live status status-playing" data-stage-ends="{{ b.session_ends_at.isoformat }}">
+                                                <span class="stage-text">Playing</span>
+                                                <span class="stage-left mono"></span>
+                                            </span>
+                                            {% else %}
+                                            <span class="status status-{{ b.stage|slugify }}">{{ b.stage }}</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <div class="btn-group">
                                                 {% if b.booking_status == 'Pending' %}
@@ -455,10 +539,14 @@
                                                 </form>
                                                 {% endif %}
 
-                                                {% if b.booking_status == 'Approved' %}
+                                                {% if b.stage == 'Playing' %}
+                                                <span class="stage-note text-muted-sm">Complete after time ends</span>
+                                                {% endif %}
+                                                {% if b.stage == 'Time ended' or b.stage == 'Playing' %}
+                                                {# Complete shows only after the playing time has ended (the server checks this too) #}
                                                 <form method="POST"
                                                     action="{% url 'admin_complete_booking' b.booking_id %}"
-                                                    style="display:inline;">
+                                                    {% if b.stage == 'Playing' %}style="display:none;" data-complete-after-ends{% else %}style="display:inline;"{% endif %}>
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-primary btn-sm"
                                                         onclick="return confirm('Mark Booking #{{ b.booking_id }} as Completed?')">
@@ -467,7 +555,7 @@
                                                 </form>
                                                 {% endif %}
 
-                                                {% if b.booking_status == 'Pending' or b.booking_status == 'Approved' %}
+                                                {% if b.booking_status == 'Pending' or b.booking_status == 'Approved' and not b.checked_in_at %}
                                                 <form method="POST"
                                                     action="{% url 'admin_cancel_booking' b.booking_id %}"
                                                     style="display:inline;">
@@ -494,9 +582,9 @@
                                                 {% else %}
                                                 {% for d in b.damage_set.all %}
                                                 {% if d.fee == 0 %}
-                                                <span style="font-size:12px; color:var(--text-muted);">No Damage</span>
+                                                <span class="text-muted-sm">No Damage</span>
                                                 {% else %}
-                                                <span style="font-size:12px; color:var(--text-muted);">Damage
+                                                <span class="text-muted-sm">Damage
                                                     Filed</span>
                                                 {% endif %}
                                                 {% endfor %}
@@ -504,14 +592,14 @@
                                                 {% endif %}
 
                                                 {% if b.booking_status == 'Cancelled' %}
-                                                <span style="font-size:12px; color:var(--text-muted);">None</span>
+                                                <span class="text-muted-sm">No actions</span>
                                                 {% endif %}
                                             </div>
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="10">
+                                        <td colspan="8">
                                             <div class="empty-state">
                                                 <p>No bookings found.</p>
                                             </div>
@@ -526,17 +614,20 @@
 
                 <div class="page" id="page-schedule">
                     <div class="page-header">
-                        <h1 class="page-heading">Court Schedule</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Court Schedule</h1>
+                            <p class="page-subtitle">Approved bookings from Google Calendar and pending requests, by day or week.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="table-filter schedule-filter">
                             <input type="search" class="form-control" id="scheduleSearch"
-                                placeholder="Search customer or booking #">
+                                placeholder="Search customer or booking #" aria-label="Search schedule">
                             <label class="schedule-toggle">
                                 <input type="checkbox" id="schedulePending" checked> Show pending bookings
                             </label>
-                            <span class="schedule-loading" id="scheduleLoading" style="display:none;">Loading…</span>
+                            <span class="schedule-loading" id="scheduleLoading" role="status" style="display:none;">Loading…</span>
                         </div>
                         <div class="schedule-notice" id="scheduleNotice" style="display:none;"></div>
                         <div class="schedule-calendar-wrap">
@@ -551,8 +642,8 @@
                 </div>
 
                 <div class="modal-overlay" id="scheduleDetailModal">
-                    <div class="modal">
-                        <div class="modal-title" id="schedDetailTitle">Booking</div>
+                    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="schedDetailTitle">
+                        <h2 class="modal-title" id="schedDetailTitle">Booking</h2>
                         <div class="modal-body">
                             <dl class="schedule-details">
                                 <dt>Customer</dt><dd id="schedDetailCustomer">—</dd>
@@ -577,14 +668,17 @@
                     data-cash-url="{% url 'checkin_record_cash' %}"
                     data-sessions-url="{% url 'checkin_sessions' %}" data-end-url="{% url 'checkin_end' %}">
                     <div class="page-header">
-                        <h1 class="page-heading">Check-in</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Check-in</h1>
+                            <p class="page-subtitle">Verify a customer's booking by QR code or Confirmation ID, then start their playing time.</p>
+                        </div>
                     </div>
                     {% csrf_token %}
 
                     <div class="ci-grid">
                         <div class="section ci-card">
                             <div class="section-head">
-                                <div class="section-title">Verify a booking</div>
+                                <h2 class="section-title">Verify a booking</h2>
                             </div>
                             <div class="ci-tabs" role="tablist">
                                 <button type="button" class="ci-tab active" data-tab="scan" role="tab" aria-selected="true">Scan QR</button>
@@ -614,7 +708,7 @@
 
                         <div class="section">
                             <div class="section-head">
-                                <div class="section-title">Booking details</div>
+                                <h2 class="section-title">Booking details</h2>
                             </div>
                             <div class="ci-result" id="checkinResult" aria-live="polite"></div>
                         </div>
@@ -622,7 +716,7 @@
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Court in use</div>
+                            <h2 class="section-title">Court in use</h2>
                         </div>
                         <div class="ci-sessions" id="ciSessions">
                             <div class="ci-empty">No one is playing right now.</div>
@@ -632,7 +726,7 @@
 
                 <div class="modal-overlay" id="ciEndModal">
                     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ciEndTitle">
-                        <div class="modal-title" id="ciEndTitle">End playing time early?</div>
+                        <h2 class="modal-title" id="ciEndTitle">End playing time now?</h2>
                         <div class="modal-body">
                             <dl class="ci-details">
                                 <dt>Customer</dt><dd id="ciEndCustomer">—</dd>
@@ -640,8 +734,9 @@
                                 <dt>Reserved time</dt><dd id="ciEndTime">—</dd>
                                 <dt>Time still left</dt><dd><span class="mono" id="ciEndLeft">--:--:--</span></dd>
                             </dl>
-                            <p class="ci-help" style="margin:0;">The countdown stops now and the booking is marked
-                                Completed. The rest of this time slot becomes free for new bookings. This can't be undone.</p>
+                            <p class="ci-help" style="margin:0;">The countdown stops now and the playing time is marked as
+                                ended. You can then mark the booking Completed in Manage Bookings. The rest of this time
+                                slot becomes free for new bookings. This can't be undone.</p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline" id="ciEndCancel">Keep playing</button>
@@ -650,14 +745,31 @@
                     </div>
                 </div>
 
+                <!-- Shown after "End playing time now", then Manage Bookings opens -->
+                <div class="modal-overlay" id="ciEndedModal">
+                    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="ciEndedTitle">
+                        <h2 class="modal-title" id="ciEndedTitle">Playing time ended</h2>
+                        <div class="modal-body">
+                            <div class="ci-banner ci-ok" id="ciEndedMessage" style="margin:0;"></div>
+                            <p class="ci-help" style="margin:12px 0 0;">Opening Manage Bookings…</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="ciEndedGo">Go to Manage Bookings</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="page" id="page-customers">
                     <div class="page-header">
-                        <h1 class="page-heading">Manage Customers</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Manage Customers</h1>
+                            <p class="page-subtitle">Registered customers and their booking history.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Registered Customers</div>
+                            <h2 class="section-title">Registered Customers</h2>
                         </div>
                         <div class="table-filter" data-table="customersTable">
                             <input type="search" class="form-control" data-filter="search" placeholder="Search name, username or email">
@@ -671,7 +783,7 @@
                                         <th>First Name</th>
                                         <th>Last Name</th>
                                         <th>Username</th>
-                                        <th>Total Bookings</th>
+                                        <th class="num">Total Bookings</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -682,11 +794,11 @@
                                         <td>{{ c.firstname }}</td>
                                         <td>{{ c.lastname }}</td>
                                         <td class="mono">@{{ c.username }}</td>
-                                        <td>{{ c.booking_set.count }}</td>
+                                        <td class="mono num">{{ c.booking_set.count }}</td>
                                         <td>
-                                            <button class="btn btn-outline btn-sm"
-                                                onclick="viewCustomerHistory('{{ c.customer_id }}', '{{ c.firstname }} {{ c.lastname }}')">
-                                                View History
+                                            <button type="button" class="btn btn-outline btn-sm"
+                                                onclick="viewCustomerHistory('{{ c.customer_id }}', '{{ c.firstname|escapejs }} {{ c.lastname|escapejs }}')">
+                                                View history
                                             </button>
                                         </td>
                                     </tr>
@@ -705,10 +817,10 @@
                     </div>
                 </div>
                 <div class="modal-overlay" id="customerHistoryModal">
-                    <div class="modal" style="max-width: 800px;">
-                        <div class="modal-title" id="customerHistoryTitle">Customer Booking History</div>
-                        <div class="modal-body" style="padding: 0;">
-                            <div class="table-wrap" style="border: none; border-radius: 0;">
+                    <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="customerHistoryTitle">
+                        <h2 class="modal-title" id="customerHistoryTitle">Customer Booking History</h2>
+                        <div class="modal-body flush">
+                            <div class="table-wrap">
                                 <table>
                                     <thead>
                                         <tr>
@@ -717,17 +829,17 @@
                                             <th>Date</th>
                                             <th>Start</th>
                                             <th>End</th>
-                                            <th>Total</th>
+                                            <th class="num">Total</th>
                                             <th>Payment</th>
                                             <th>Status</th>
                                             <th>Liabilities</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="customerHistoryBody">
+                                    <tbody id="customerHistoryBody" aria-live="polite">
                                         <tr>
                                             <td colspan="9">
                                                 <div class="empty-state">
-                                                    <p>Loading...</p>
+                                                    <p>Loading…</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -736,19 +848,22 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-outline" onclick="closeModal('customerHistoryModal')">Close</button>
+                            <button type="button" class="btn btn-outline" onclick="closeModal('customerHistoryModal')">Close</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="page" id="page-payments">
                     <div class="page-header">
-                        <h1 class="page-heading">Payments</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Payments</h1>
+                            <p class="page-subtitle">Every payment recorded for court bookings.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Payment Records</div>
+                            <h2 class="section-title">Payment Records</h2>
                         </div>
                         <div class="table-filter" data-table="paymentsTable">
                             <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or customer">
@@ -767,7 +882,7 @@
                                         <th>#</th>
                                         <th>Booking ID</th>
                                         <th>Customer</th>
-                                        <th>Amount</th>
+                                        <th class="num">Amount</th>
                                         <th>Date</th>
                                         <th>Payment Status</th>
                                         <th>Payment Method</th>
@@ -779,15 +894,15 @@
                                         <td class="mono">{{ p.payment_id }}</td>
                                         <td class="mono">#{{ p.booking.booking_id }}</td>
                                         <td>{{ p.booking.customer.firstname }} {{ p.booking.customer.lastname }}</td>
-                                        <td class="mono">₱{{ p.payment_amount }}</td>
+                                        <td class="mono num">₱{{ p.payment_amount }}</td>
                                         <td>{{ p.payment_date }}</td>
-                                        <td>{{ p.payment_status }}</td>
+                                        <td><span class="status status-{{ p.payment_status|slugify }}">{{ p.payment_status }}</span></td>
                                         <td>{{ p.payment_method|default:"—" }}</td>
                                     </tr>
 
                                     {% empty %}
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="7">
                                             <div class="empty-state">
                                                 <p>No payment records found.</p>
                                             </div>
@@ -802,12 +917,15 @@
 
                 <div class="page" id="page-damages">
                     <div class="page-header">
-                        <h1 class="page-heading">Damage Reports</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Damage Reports</h1>
+                            <p class="page-subtitle">Damage filed after completed bookings, and whether the fee is settled.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">All Damage Reports</div>
+                            <h2 class="section-title">All Damage Reports</h2>
                         </div>
                         <div class="table-filter" data-table="damagesTable">
                             <input type="search" class="form-control" data-filter="search" placeholder="Search booking #, customer or description">
@@ -822,7 +940,7 @@
                                         <th>Booking ID</th>
                                         <th>Customer</th>
                                         <th>Description</th>
-                                        <th>Fee</th>
+                                        <th class="num">Fee</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -832,16 +950,17 @@
                                         <td class="mono">{{ d.damage_id }}</td>
                                         <td class="mono">#{{ d.booking.booking_id }}</td>
                                         <td>{{ d.booking.customer.firstname }} {{ d.booking.customer.lastname }}</td>
-                                        <td>{{ d.description }}</td>
-                                        <td class="mono">₱{{ d.fee }}</td>
+                                        <td class="wrap">{{ d.description }}</td>
+                                        <td class="mono num">₱{{ d.fee }}</td>
                                         <td>
                                             {% if d.status == 'Pending' %}
-                                            <form method="POST" action="{% url 'settle_damage' d.damage_id %}"
-                                                style="display:inline;">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-success btn-sm">Mark
-                                                    Settled</button>
-                                            </form>
+                                            <div class="btn-group">
+                                                <span class="status status-pending">Pending</span>
+                                                <form method="POST" action="{% url 'settle_damage' d.damage_id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-success btn-sm">Mark settled</button>
+                                                </form>
+                                            </div>
                                             {% else %}
                                             <span class="badge badge-settled">Settled</span>
                                             {% endif %}
@@ -864,16 +983,19 @@
 
                 <div class="page" id="page-records">
                     <div class="page-header">
-                        <h1 class="page-heading">Booking Records</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Booking Records</h1>
+                            <p class="page-subtitle">Full booking history with payment and liability details.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">All Booking Records</div>
+                            <h2 class="section-title">All Booking Records</h2>
                         </div>
                         <div class="table-filter" data-table="recordsTable">
                             <input type="search" class="form-control" data-filter="search" placeholder="Search booking # or customer">
-                            <select class="form-control" data-filter="status" aria-label="Booking status"><option value="">Booking status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>
+                            <select class="form-control" data-filter="status" aria-label="Booking status"><option value="">Booking status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Playing">Playing</option><option value="Time ended">Time ended</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>
                             <select class="form-control" data-filter="payment" aria-label="Payment status"><option value="">Payment status: All</option><option value="Paid">Paid</option><option value="Unpaid">Unpaid</option></select>
                             <span class="filter-label">From</span>
                             <input type="date" class="form-control" data-filter="from" aria-label="From date">
@@ -887,73 +1009,69 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Customer</th>
-                                        <th>Court</th>
                                         <th>Date</th>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                        <th>Total Price</th>
+                                        <th>Time</th>
+                                        <th class="num">Total Price</th>
                                         <th>Payment Method</th>
                                         <th>Payment Status</th>
                                         <th>Booking Status</th>
-                                        <th>Liabilities</th>
+                                        <th class="num">Liabilities</th>
                                         <th>Liabilities Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for b in all_bookings %}
-                                    <tr data-search="{{ b.booking_id }} {{ b.customer.firstname }} {{ b.customer.lastname }} {{ b.customer.username }}" data-status="{{ b.booking_status }}" data-payment="{% if b.payment %}{{ b.payment.payment_status }}{% else %}Unpaid{% endif %}" data-date="{{ b.booking_date|date:'Y-m-d' }}">
+                                    <tr data-search="{{ b.booking_id }} {{ b.customer.firstname }} {{ b.customer.lastname }} {{ b.customer.username }}" data-status="{{ b.stage }}" data-payment="{% if b.payment %}{{ b.payment.payment_status }}{% else %}Unpaid{% endif %}" data-date="{{ b.booking_date|date:'Y-m-d' }}">
                                         <td class="mono">{{ b.booking_id }}</td>
-                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}</td>
-                                        <td>{{ b.court.court_name|default:'LA Court' }}</td>
+                                        <td>{{ b.customer.firstname }} {{ b.customer.lastname }}<span class="cell-sub">{{ b.court.court_name|default:'LA Court' }}</span></td>
                                         <td>{{ b.booking_date }}</td>
-                                        <td>{{ b.start_time|time:"H:i" }}</td>
-                                        <td>{{ b.end_time|time:"H:i" }}</td>
-                                        <td>₱{{ b.total_price }}</td>
+                                        <td class="mono">{{ b.start_time|time:"H:i" }}–{{ b.end_time|time:"H:i" }}</td>
+                                        <td class="mono num">₱{{ b.total_price }}</td>
                                         <td>
                                             {% if b.payment %}
                                             {{ b.payment.payment_method|default:"—" }}
                                             {% else %}
-                                            —
+                                            <span class="text-muted">—</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if b.payment %}
-                                            {{ b.payment.payment_status }}
+                                            <span class="status status-{{ b.payment.payment_status|slugify }}">{{ b.payment.payment_status }}</span>
                                             {% else %}
-                                            Unpaid
+                                            <span class="status status-unpaid">Unpaid</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ b.booking_status }}</td>
-                                        <td>
+                                        <td><span class="status status-{{ b.stage|slugify }}">{{ b.stage }}</span></td>
+                                        <td class="mono num">
                                             {% if b.damage_set.all %}
                                             {% for d in b.damage_set.all %}
                                             {% if d.fee == 0 %}
-                                            None
+                                            <span class="text-muted">None</span>
                                             {% else %}
                                             ₱{{ d.fee }}
                                             {% endif %}
                                             {% endfor %}
                                             {% else %}
-                                            —
+                                            <span class="text-muted">—</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if b.damage_set.all %}
                                             {% for d in b.damage_set.all %}
                                             {% if d.fee == 0 %}
-                                            No Damage
+                                            <span class="status status-no-damage">No Damage</span>
                                             {% else %}
-                                            {{ d.status }}
+                                            <span class="status status-{{ d.status|slugify }}">{{ d.status }}</span>
                                             {% endif %}
                                             {% endfor %}
                                             {% else %}
-                                            —
+                                            <span class="text-muted">—</span>
                                             {% endif %}
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="12">
+                                        <td colspan="10">
                                             <div class="empty-state">
                                                 <p>No records found.</p>
                                             </div>
@@ -969,65 +1087,60 @@
 
                 <div class="page" id="page-profile">
                     <div class="page-header">
-                        <h1 class="page-heading">Edit Profile</h1>
+                        <div>
+                            <h1 class="page-heading" tabindex="-1">Edit Profile</h1>
+                            <p class="page-subtitle">Your admin account details and Google Calendar connection.</p>
+                        </div>
                     </div>
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Admin Profile</div>
+                            <h2 class="section-title">Admin Profile</h2>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 240px 1fr; gap: 24px; padding: 24px;">
+                        <div class="profile-grid">
 
-                            <div style="text-align: center;">
-                                <div style="width:80px; height:80px; border-radius:50%; background:var(--sb-bg);
-                            border:3px solid var(--sb-accent); margin:0 auto 14px;
-                            display:flex; align-items:center; justify-content:center;
-                            font-size:28px; font-weight:700; color:#fff;">
+                            <div class="profile-avatar-card">
+                                <div class="profile-avatar-circle" aria-hidden="true">
                                     {{ logged_admin.firstname|first }}{{ logged_admin.lastname|first }}
                                 </div>
-                                <div style="font-size:15px; font-weight:700; color:var(--text);">
-                                    {{ logged_admin.firstname }} {{ logged_admin.lastname }}
-                                </div>
-                                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                                    @{{ logged_admin.username }}
+                                <div>
+                                    <div class="profile-full-name">{{ logged_admin.firstname }} {{ logged_admin.lastname }}</div>
+                                    <div class="profile-username">@{{ logged_admin.username }}</div>
                                 </div>
                             </div>
 
                             <form method="POST" action="{% url 'admin_update_profile' %}">
                                 {% csrf_token %}
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="profile-form-grid">
                                     <div class="form-group">
-                                        <label class="form-label">First Name</label>
-                                        <input type="text" name="firstname" class="form-control"
-                                            value="{{ logged_admin.firstname }}" required>
+                                        <label class="form-label" for="profileFirstname">First Name</label>
+                                        <input type="text" name="firstname" id="profileFirstname" class="form-control"
+                                            value="{{ logged_admin.firstname }}" autocomplete="given-name" required>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">Last Name</label>
-                                        <input type="text" name="lastname" class="form-control"
-                                            value="{{ logged_admin.lastname }}" required>
+                                        <label class="form-label" for="profileLastname">Last Name</label>
+                                        <input type="text" name="lastname" id="profileLastname" class="form-control"
+                                            value="{{ logged_admin.lastname }}" autocomplete="family-name" required>
                                     </div>
-                                    <div class="form-group" style="grid-column: 1 / -1;">
-                                        <label class="form-label">Username</label>
-                                        <input type="text" name="username" class="form-control"
-                                            value="{{ logged_admin.username }}" required>
+                                    <div class="form-group span-2">
+                                        <label class="form-label" for="profileUsername">Username</label>
+                                        <input type="text" name="username" id="profileUsername" class="form-control"
+                                            value="{{ logged_admin.username }}" autocomplete="username" required>
                                     </div>
-                                    <div class="form-group" style="grid-column: 1 / -1;">
-                                        <label class="form-label">New Password
-                                            <span style="font-size:11px; color:var(--text-muted); text-transform:none;">
-                                                (leave blank to keep current)
-                                            </span>
-                                        </label>
-                                        <input type="password" name="new_password" class="form-control"
-                                            placeholder="Enter new password">
+                                    <div class="form-group">
+                                        <label class="form-label" for="profileNewPassword">New Password</label>
+                                        <input type="password" name="new_password" id="profileNewPassword" class="form-control"
+                                            autocomplete="new-password" aria-describedby="profilePasswordHint">
+                                        <span class="form-hint" id="profilePasswordHint">Leave blank to keep your current password.</span>
                                     </div>
-                                    <div class="form-group" style="grid-column: 1 / -1;">
-                                        <label class="form-label">Confirm Password</label>
-                                        <input type="password" name="confirm_password" class="form-control"
-                                            placeholder="Confirm new password">
+                                    <div class="form-group">
+                                        <label class="form-label" for="profileConfirmPassword">Confirm Password</label>
+                                        <input type="password" name="confirm_password" id="profileConfirmPassword" class="form-control"
+                                            autocomplete="new-password">
                                     </div>
                                 </div>
-                                <div style="margin-top:20px;">
+                                <div class="form-actions">
                                     <button type="submit" class="btn btn-primary">Save Changes</button>
                                 </div>
                             </form>
@@ -1037,7 +1150,7 @@
 
                     <div class="section">
                         <div class="section-head">
-                            <div class="section-title">Google Calendar</div>
+                            <h2 class="section-title">Google Calendar</h2>
                             {% if google_connection %}
                             <span class="gcal-status connected">Connected</span>
                             {% else %}
@@ -1073,16 +1186,17 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
-    </div>
-    <script src="{% static 'js/admin/admin_dashbo.js' %}"></script>
+    <script src="{% static 'js/common/theme_toggle.js' %}?v=3"></script>
+    <script src="{% static 'js/admin/admin_dashbo.js' %}?v=3"></script>
     <script src="{% static 'vendor/fullcalendar/index.global.min.js' %}"></script>
     <script src="{% static 'js/common/table_filter.js' %}"></script>
     <script src="{% static 'js/admin/admin_schedule.js' %}"></script>
     <script src="{% static 'vendor/html5-qrcode/html5-qrcode.min.js' %}"></script>
-    <script src="{% static 'js/admin/admin_checkin.js' %}"></script>
+    <script src="{% static 'js/admin/admin_checkin.js' %}?v=2"></script>
+    <script src="{% static 'js/admin/admin_bookings.js' %}?v=1"></script>
 
 </body>
 

@@ -1,75 +1,72 @@
-{% load static %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_sideba.css' %}">
-</head>
-
-<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-    <span></span>
-    <span></span>
-    <span></span>
-</button>
-
+{% url 'customer_dashboard' as dash_url %}
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<nav class="sidebar" id="sidebar">
+<nav class="sidebar" id="sidebar" aria-label="Customer navigation">
     <div class="sidebar-logo">
         <div class="logo-mark">
+            <span class="logo-ball" aria-hidden="true"><svg class="icon"><use href="#i-ball"/></svg></span>
             <div class="logo-text">
                 <strong>Labra</strong>
                 <span>Court Rental</span>
             </div>
         </div>
+        <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+            <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
     </div>
 
-    <div class="sidebar-user">
-        <div class="user-avatar">
-            {% if customer.profile_picture %}
-            <img src="{{ customer.profile_picture.url }}" alt="Avatar">
-            {% else %}
-            {{ customer.firstname|first }}{{ customer.lastname|first }}
-            {% endif %}
-        </div>
-        <div class="user-info">
-            <strong>{{ customer.firstname }} {{ customer.lastname }}</strong>
-            <span>@{{ customer.username }}</span>
-        </div>
-    </div>
-
+    {# Real links: the dashboard switches pages in place, other pages follow the link #}
     <div class="sidebar-nav">
         <div class="nav-label">Overview</div>
-        <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('dashboard')">
+        <a class="nav-item{% if active_page == 'dashboard' %} active{% endif %}" href="{{ dash_url }}#dashboard" data-page="dashboard">
+            <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>
             Dashboard
         </a>
-        <a class="nav-item {% if active_page == 'book' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('book')">
+        <a class="nav-item{% if active_page == 'book' %} active{% endif %}" href="{{ dash_url }}#book" data-page="book">
+            <svg class="icon" aria-hidden="true"><use href="#i-calendar-plus"/></svg>
             Book Court
         </a>
 
         <div class="nav-label">Activities</div>
-        <a class="nav-item {% if active_page == 'bookings' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('bookings')">
+        <a class="nav-item{% if active_page == 'bookings' %} active{% endif %}" href="{{ dash_url }}#bookings" data-page="bookings">
+            <svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg>
             Bookings
             {% if badge_upcoming_items %}<span class="nav-badge" id="badgeBookings" title="New or updated bookings"
                 data-items="{{ badge_upcoming_items|join:',' }}" data-user="{{ customer.username }}">{{ badge_upcoming_items|length }}</span>{% endif %}
         </a>
-        <a class="nav-item {% if active_page == 'history' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('history')">
+        <a class="nav-item{% if active_page == 'history' %} active{% endif %}" href="{{ dash_url }}#history" data-page="history">
+            <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>
             Booking History
         </a>
-        <a class="nav-item {% if active_page == 'payment' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('payment')">
+        <a class="nav-item{% if active_page == 'payment' %} active{% endif %}" href="{{ dash_url }}#payment" data-page="payment">
+            <svg class="icon" aria-hidden="true"><use href="#i-card"/></svg>
             Payment
             {% if unpaid_count %}<span class="nav-badge" title="{{ unpaid_count }} unpaid">{{ unpaid_count }}</span>{% endif %}
         </a>
 
         <div class="nav-label">Account</div>
-        <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="javascript:void(0)"
-            onclick="showPage('profile')">
+        <a class="nav-item{% if active_page == 'profile' %} active{% endif %}" href="{{ dash_url }}#profile" data-page="profile">
+            <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
             Edit Profile
         </a>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="user-avatar" aria-hidden="true">
+                {% if customer.profile_picture %}
+                <img src="{{ customer.profile_picture.url }}" alt="">
+                {% else %}
+                {{ customer.firstname|first }}{{ customer.lastname|first }}
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <strong>{{ customer.firstname }} {{ customer.lastname }}</strong>
+                <span>@{{ customer.username }}</span>
+            </div>
+        </div>
         <a class="nav-item logout" href="{% url 'logout' %}">
+            <svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>
             Logout
         </a>
     </div>
@@ -77,36 +74,55 @@
 
 <script>
     (function () {
-        const toggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
+        const isMobile = function () { return window.innerWidth <= 900; };
+
+        function toggleBtn() { return document.getElementById('sidebarToggle'); }
 
         function openSidebar() {
             sidebar.classList.add('open');
             overlay.classList.add('visible');
-            toggle.classList.add('open');
+            const t = toggleBtn();
+            if (t) t.setAttribute('aria-expanded', 'true');
+            const current = sidebar.querySelector('.nav-item.active') || sidebar.querySelector('.nav-item');
+            if (current) current.focus();
         }
 
-        function closeSidebar() {
+        function closeSidebar(restoreFocus) {
+            const wasOpen = sidebar.classList.contains('open');
             sidebar.classList.remove('open');
             overlay.classList.remove('visible');
-            toggle.classList.remove('open');
+            const t = toggleBtn();
+            if (t) {
+                t.setAttribute('aria-expanded', 'false');
+                if (wasOpen && restoreFocus) t.focus();
+            }
         }
 
-        toggle.addEventListener('click', function () {
-            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('#sidebarToggle')) {
+                sidebar.classList.contains('open') ? closeSidebar(true) : openSidebar();
+            }
         });
+        document.getElementById('sidebarClose').addEventListener('click', function () { closeSidebar(true); });
+        overlay.addEventListener('click', function () { closeSidebar(true); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar(true);
+        });
+        window.addEventListener('resize', function () { if (!isMobile()) closeSidebar(false); });
 
-        overlay.addEventListener('click', closeSidebar);
-
-        sidebar.querySelectorAll('.nav-item').forEach(function (item) {
-            item.addEventListener('click', function () {
-                if (window.innerWidth <= 768) closeSidebar();
+        // On the dashboard, switch pages in place; elsewhere the link opens the dashboard page
+        sidebar.querySelectorAll('.nav-item[data-page]').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                if (typeof window.showPage === 'function' && document.getElementById('page-' + item.dataset.page)) {
+                    e.preventDefault();
+                    window.showPage(item.dataset.page);
+                    if (typeof window.focusPage === 'function') window.focusPage(item.dataset.page);
+                }
+                if (isMobile()) closeSidebar(false);
             });
-        });
-
-        window.addEventListener('resize', function () {
-            if (window.innerWidth > 768) closeSidebar();
         });
     })();
 </script>

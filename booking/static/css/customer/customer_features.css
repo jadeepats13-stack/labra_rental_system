@@ -1,178 +1,84 @@
-/* Customer features: availability calendar, dashboard cards, reminders,
-   Add to Google Calendar, search bars. Uses the existing customer colours
-   (--orange, --dark, --dark-2, --dark-3, --white, --gray, --gray-light). */
+/* Customer dashboard page: greeting, reminders, next-game ticket, LA Court card,
+   stats, This Week strip and the check-in QR pop-up. Tokens come from customer_base.css. */
 
-.btn-sm {
-    padding: 7px 14px;
-    font-size: 12px;
-    border-radius: 8px;
+.greeting {
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    line-height: 1.05;
+    color: var(--text);
 }
 
-/* ── Shared card ── */
-.lb-card {
-    background: var(--dark);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-    padding: 20px 22px;
-}
-
-.lb-card-label {
-    font-size: 11px;
-    color: var(--gray-light);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: 10px;
+.greeting + p {
+    margin-top: var(--space-1);
 }
 
 /* ── Reminder banners ── */
 .reminders {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
 }
 
 .reminder {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    background: rgba(249, 115, 22, 0.08);
-    border: 1px solid rgba(249, 115, 22, 0.25);
-    color: var(--white);
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--orange-border);
+    border-radius: var(--radius);
+    background: var(--orange-soft);
+    color: var(--text);
+}
+
+.reminder > .icon {
+    color: var(--orange-text);
+}
+
+.reminder-text {
+    flex: 1;
 }
 
 .reminder.reminder-muted {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: var(--gray-light);
+    border-color: var(--border-strong);
+    background: var(--surface);
 }
 
-.reminder a,
-.reminder button.link {
-    color: var(--orange);
-    font-weight: 600;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font: inherit;
-    padding: 0;
-    text-decoration: none;
-    white-space: nowrap;
+.reminder.reminder-muted > .icon {
+    color: var(--text-muted);
 }
 
-/* ── Next Game + LA Court row ── */
+/* ── Next game + LA Court row ── */
 .dash-top-row {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: var(--space-5);
+    margin-bottom: var(--space-5);
 }
 
-.next-game {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    border-color: rgba(249, 115, 22, 0.25);
-}
-
-.next-game-when {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 30px;
-    letter-spacing: 1px;
-    color: var(--white);
-    line-height: 1.1;
-}
-
-.next-game-countdown {
-    color: var(--orange);
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.next-game-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 18px;
-    font-size: 13px;
-    color: var(--gray-light);
-}
-
-.next-game-meta strong {
-    color: var(--white);
-    font-weight: 600;
-}
-
-.status-pill {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.status-pill.approved { color: #22c55e; border-color: rgba(34, 197, 94, 0.35); }
-.status-pill.pending { color: #eab308; border-color: rgba(234, 179, 8, 0.35); }
-
-.next-game-weather {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--dark-2);
-    font-size: 13px;
-    color: var(--white);
-}
-
-.next-game-weather img {
-    width: 40px;
-    height: 40px;
-    margin: -6px 0;
-}
-
-.next-game-weather.rain {
-    border: 1px solid rgba(234, 179, 8, 0.35);
-}
-
-.next-game-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.next-game-empty {
-    color: var(--gray-light);
-    font-size: 14px;
-}
-
-/* ── Your next game: ticket card ── */
 .ticket {
     display: grid;
-    grid-template-columns: 112px minmax(0, 1fr);
-    background: var(--dark);
-    border: 1px solid rgba(249, 115, 22, 0.28);
-    border-radius: 16px;
+    grid-template-columns: 116px minmax(0, 1fr);
+    background: var(--surface);
+    border: 1px solid var(--orange-border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
-/* Date stub, separated by a perforated edge like a game ticket */
+/* Date stub with a perforated edge, like a game ticket */
 .ticket-stub {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px 8px;
+    padding: var(--space-5) var(--space-2);
     background: var(--orange);
-    color: #1a0d03;
+    color: var(--on-orange);
     text-align: center;
-    border-right: 2px dashed rgba(10, 10, 10, 0.55);
+    border-right: 2px dashed rgba(11, 11, 12, 0.55);
 }
 
 .ticket-stub::before,
@@ -183,23 +89,30 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: var(--black);
+    background: var(--bg);
 }
 
 .ticket-stub::before { top: -8px; }
 .ticket-stub::after { bottom: -8px; }
 
+.ticket-stub .icon {
+    width: 40px;
+    height: 40px;
+    stroke-width: 1.4;
+}
+
 .ticket-dow,
 .ticket-month {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-condensed);
+    font-size: 17px;
     font-weight: 700;
-    font-size: 16px;
     letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .ticket-day {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 64px;
+    font-family: var(--font-display);
+    font-size: 68px;
     line-height: 0.9;
 }
 
@@ -207,74 +120,99 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 18px 22px 20px;
     min-width: 0;
+    padding: var(--space-5) var(--space-6) var(--space-6);
 }
 
 .ticket-top {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
     flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
 }
 
 .ticket-title {
-    margin: 0;
-    font-family: 'Barlow', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gray-light);
+    font-family: var(--font-condensed);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
 .ticket-chips {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
 }
 
-.status-pill.paid { color: #22c55e; border-color: rgba(34, 197, 94, 0.35); }
-.status-pill.unpaid { color: var(--orange-light); border-color: rgba(249, 115, 22, 0.4); }
-
 .ticket-time {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 40px;
+    margin-top: 2px;
+    font-family: var(--font-display);
+    font-size: 44px;
     letter-spacing: 1px;
     line-height: 1;
-    color: var(--white);
-    margin-top: 2px;
+    color: var(--text);
 }
 
 .ticket-countdown {
-    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
     font-weight: 600;
-    color: var(--orange);
+    color: var(--orange-text);
+}
+
+.ticket-countdown .icon {
+    width: 16px;
+    height: 16px;
 }
 
 .ticket-muted {
-    color: var(--gray-light);
+    color: var(--text-muted);
     font-weight: 400;
+}
+
+.ticket-live {
+    color: var(--green);
+}
+
+.ticket-live-left {
+    font-variant-numeric: tabular-nums;
 }
 
 .ticket-facts {
     display: grid;
     grid-template-columns: repeat(4, max-content);
-    gap: 4px 28px;
-    margin: 12px 0 4px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    gap: var(--space-2) var(--space-8);
+    margin: var(--space-3) 0 var(--space-1);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
 }
 
 .ticket-facts dt {
-    font-size: 12px;
-    color: var(--gray);
     margin-bottom: 2px;
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .ticket-facts dd {
-    margin: 0;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--white);
+    color: var(--text);
+}
+
+.ticket-code {
+    font-family: var(--font-condensed);
+    letter-spacing: 1px;
+}
+
+/* Weather always gets its own line under the booking facts */
+.ticket-weather {
+    grid-column: 1 / -1;
+    margin-top: var(--space-2);
 }
 
 .ticket-weather dd {
@@ -291,190 +229,193 @@
 
 .ticket-weather small {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: var(--gray-light);
+    color: var(--text-muted);
 }
 
 .ticket-weather.rain small {
-    color: #eab308;
+    color: var(--amber);
 }
 
 .ticket-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 16px;
-    margin-top: 10px;
+    gap: var(--space-3) var(--space-4);
+    margin-top: var(--space-3);
 }
 
-.ticket-link {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--gray-light);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.ticket-link:hover,
-.ticket-link:focus-visible {
-    color: var(--orange);
+.ticket-empty {
+    border-color: var(--border);
 }
 
 .ticket-empty .ticket-stub {
-    background: var(--dark-3);
-    color: var(--gray);
+    background: var(--surface-3);
+    color: var(--text-muted);
+    border-right-color: var(--border-strong);
 }
 
-/* Weather always gets its own line under the booking facts */
-.ticket-weather {
-    grid-column: 1 / -1;
-    margin-top: 8px;
-}
-
-#myBookingsTable .action-btns {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-}
-
-@media (max-width: 600px) {
-    .ticket {
-        grid-template-columns: 1fr;
-    }
-    .ticket-stub {
-        flex-direction: row;
-        gap: 10px;
-        padding: 12px;
-        border-right: none;
-        border-bottom: 2px dashed rgba(10, 10, 10, 0.55);
-    }
-    .ticket-stub::before,
-    .ticket-stub::after {
-        top: auto;
-        bottom: -9px;
-    }
-    .ticket-stub::before { left: -8px; right: auto; }
-    .ticket-stub::after { right: -8px; }
-    .ticket-day {
-        font-size: 40px;
-    }
-    .ticket-time {
-        font-size: 32px;
-    }
-    .ticket-facts {
-        grid-template-columns: repeat(2, auto);
-        gap: 10px 20px;
-    }
+.ticket-empty .ticket-time {
+    font-size: 36px;
 }
 
 /* LA Court card */
 .la-court-card {
-    padding: 0;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+    padding: 0;
+    overflow: hidden;
 }
 
 .la-court-card img {
-    width: 100%;
-    height: 130px;
-    object-fit: cover;
     display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
 }
 
 .la-court-body {
-    padding: 16px 18px 18px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-2);
+    flex: 1;
+    padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.la-court-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
 }
 
 .la-court-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 400;
     letter-spacing: 1px;
-    color: var(--white);
+    line-height: 1;
+    color: var(--text);
 }
 
 .la-court-rate {
-    color: var(--orange);
-    font-weight: 700;
-    font-size: 18px;
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1;
+    color: var(--orange-text);
 }
 
 .la-court-rate span {
-    color: var(--gray);
-    font-size: 12px;
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-muted);
 }
 
 .la-court-free {
-    font-size: 13px;
-    color: var(--gray-light);
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.la-court-body .btn {
+    margin-top: auto;
+}
+
+/* ── Stats ── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+}
+
+.stat-card {
+    padding: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.stat-card.is-attention {
+    border-color: var(--orange-border);
+}
+
+.stat-label {
+    margin-bottom: var(--space-2);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-card.is-attention .stat-value {
+    color: var(--orange-text);
 }
 
 /* ── This Week strip ── */
 .week-strip {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 28px;
+    gap: var(--space-3);
 }
 
 .week-day {
-    background: var(--dark);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 12px 10px;
-    text-align: center;
-    cursor: pointer;
-    color: var(--white);
-    font: inherit;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    text-align: center;
+    cursor: pointer;
     transition: var(--transition);
 }
 
-.week-day:hover,
-.week-day:focus-visible {
-    border-color: rgba(249, 115, 22, 0.5);
-    outline: none;
+.week-day:hover {
+    border-color: var(--orange-border);
+    background: var(--surface-2);
 }
 
 .week-day.today {
-    border-color: rgba(249, 115, 22, 0.35);
+    border-color: var(--orange-border);
 }
 
 .week-day-name {
-    font-size: 11px;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--gray-light);
-    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.week-day.today .week-day-name {
+    color: var(--orange-text);
 }
 
 .week-day-date {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
+    font-family: var(--font-display);
+    font-size: 24px;
     letter-spacing: 1px;
+    line-height: 1;
 }
 
 .week-day-weather {
     display: flex;
     align-items: center;
     gap: 2px;
-    font-size: 12px;
     min-height: 32px;
-    color: var(--white);
+    font-size: 14px;
+    color: var(--text);
 }
 
 .week-day-weather img {
@@ -483,263 +424,51 @@
 }
 
 .week-day-weather.none {
-    color: var(--gray);
-    font-size: 11px;
+    font-size: 12px;
+    color: var(--text-subtle);
 }
 
 .week-day-free {
-    font-size: 11px;
-    color: var(--gray-light);
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .free-bar {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 4px;
+    height: 5px;
     border: none;
-    border-radius: 4px;
-    background: var(--dark-3);
+    border-radius: 5px;
+    background: var(--surface-3);
     overflow: hidden;
 }
 
 .free-bar::-webkit-progress-bar {
-    background: var(--dark-3);
-    border-radius: 4px;
+    background: var(--surface-3);
+    border-radius: 5px;
 }
 
 .free-bar::-webkit-progress-value {
     background: var(--orange);
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
 .free-bar::-moz-progress-bar {
     background: var(--orange);
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
-/* ── Availability calendar (Book Court) ── */
-.avail-card {
-    margin-bottom: 24px;
-}
-
-.avail-head {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.avail-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    font-size: 12px;
-    color: var(--gray-light);
-}
-
-.avail-legend i {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    margin-right: 6px;
-    vertical-align: -1px;
-}
-
-.avail-notice {
-    display: none;
-    margin-bottom: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    background: rgba(249, 115, 22, 0.08);
-    border: 1px solid rgba(249, 115, 22, 0.25);
-    color: var(--white);
-}
-
-.avail-hint {
-    margin-top: 10px;
-    font-size: 11px;
-    color: var(--gray);
-}
-
-#availCalendar {
-    --fc-border-color: rgba(255, 255, 255, 0.07);
-    --fc-page-bg-color: var(--dark);
-    --fc-neutral-bg-color: var(--dark-2);
-    --fc-today-bg-color: rgba(249, 115, 22, 0.06);
-    --fc-now-indicator-color: var(--orange);
-    --fc-button-bg-color: var(--dark-2);
-    --fc-button-border-color: rgba(255, 255, 255, 0.1);
-    --fc-button-text-color: var(--white);
-    --fc-button-hover-bg-color: var(--dark-3);
-    --fc-button-hover-border-color: rgba(249, 115, 22, 0.4);
-    --fc-button-active-bg-color: var(--orange);
-    --fc-button-active-border-color: var(--orange);
-    color: var(--white);
-    font-family: 'Barlow', sans-serif;
-    font-size: 13px;
-}
-
-#availCalendar .fc-toolbar-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 1px;
-}
-
-#availCalendar .fc-button {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: none;
-    box-shadow: none;
-}
-
-#availCalendar .fc-col-header-cell-cushion {
-    color: var(--white);
-    text-decoration: none;
-    padding: 6px 2px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-#availCalendar .fc-timegrid-slot-label-cushion {
-    color: var(--gray-light);
-    font-size: 11px;
-}
-
-#availCalendar .fc-timegrid-slot {
-    height: 26px;
-    cursor: pointer;
-}
-
-#availCalendar .fc-timegrid-slot:hover {
-    background: rgba(249, 115, 22, 0.05);
-}
-
-#availCalendar .fc-event {
-    cursor: default;
-    font-size: 11px;
-    border-radius: 6px;
-}
-
-.cal-day-name {
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--gray-light);
-}
-
-.cal-day-num {
-    font-weight: 700;
-    font-size: 14px;
-}
-
-.cal-day-weather {
-    display: flex;
-    align-items: center;
-    font-size: 11px;
-    color: var(--gray-light);
-    min-height: 26px;
-}
-
-.cal-day-weather img {
-    width: 26px;
-    height: 26px;
-}
-
-/* ── Booked times in dropdowns ── */
-select.form-control option:disabled {
-    color: #52525b;
-}
-
-/* ── Search bars on customer tables ── */
-.page-content .table-filter {
-    padding: 0 0 14px;
-}
-
-.page-content .table-filter .form-control {
-    padding: 9px 12px;
-    font-size: 13px;
-}
-
-.page-content .table-filter-nomatch td {
-    color: var(--gray-light);
-}
-
-@media (max-width: 1100px) {
-    .week-strip {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 900px) {
-    .dash-top-row {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 600px) {
-    .week-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .next-game-when {
-        font-size: 24px;
-    }
-    .reminder {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-
-/* ── Check-in QR (My Bookings, ticket card) ── */
-.btn-qr {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(249, 115, 22, 0.45);
-    background: transparent;
-    color: var(--orange);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.btn-qr:hover,
-.btn-qr:focus-visible {
-    background: rgba(249, 115, 22, 0.1);
-    outline: none;
-}
-
-.ticket-code {
-    font-family: 'Barlow Condensed', sans-serif;
-    letter-spacing: 1px;
-}
-
-.ticket-live {
-    color: #22c55e;
-}
-
-.ticket-live-left {
-    font-variant-numeric: tabular-nums;
-}
-
+/* ── Check-in QR pop-up ── */
 .qr-modal {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
-    background: rgba(0, 0, 0, 0.7);
+    padding: var(--space-4);
+    background: var(--scrim);
 }
 
 .qr-modal[hidden] {
@@ -747,78 +476,165 @@ select.form-control option:disabled {
 }
 
 .qr-modal-card {
-    width: 100%;
-    max-width: 340px;
-    background: var(--dark);
-    border: 1px solid rgba(249, 115, 22, 0.3);
-    border-radius: 16px;
-    padding: 22px;
-    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 360px;
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--orange-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
 }
 
 .qr-modal-card h2 {
-    margin: 0;
-    font-family: 'Barlow', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--white);
+    font-family: var(--font-condensed);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text);
 }
 
 .qr-when {
-    margin: 0 0 6px;
-    font-size: 13px;
-    color: var(--gray-light);
+    margin-bottom: var(--space-2);
+    font-size: 14px;
+    color: var(--text-muted);
 }
 
 .qr-modal-card img {
     width: 240px;
     height: 240px;
     max-width: 100%;
+    padding: 8px;
+    border-radius: var(--radius);
     background: #fff;
-    border-radius: 12px;
-    padding: 6px;
 }
 
 .qr-code-label {
-    margin-top: 6px;
-    font-size: 12px;
-    color: var(--gray);
+    margin-top: var(--space-2);
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .qr-code {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
+    font-family: var(--font-display);
+    font-size: 34px;
     letter-spacing: 2px;
-    white-space: nowrap;
-    color: var(--white);
     line-height: 1;
+    white-space: nowrap;
+    color: var(--text);
     user-select: all;
 }
 
 .qr-note {
-    margin: 4px 0 8px;
-    font-size: 12px;
+    margin: var(--space-1) 0 var(--space-2);
+    font-size: 14px;
     line-height: 1.5;
-    color: var(--gray-light);
+    color: var(--text-muted);
 }
 
-/* ── Sidebar badges ── */
-.nav-item .nav-badge[hidden] { display: none; }
+/* ── Responsive ── */
+@media (max-width: 1280px) {
+    .ticket-facts {
+        grid-template-columns: repeat(2, max-content);
+        gap: var(--space-3) var(--space-8);
+    }
+}
 
-.nav-item .nav-badge {
-    margin-left: auto;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 10px;
-    background: var(--orange);
-    color: #140a02;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 20px;
-    text-align: center;
+@media (max-width: 1100px) {
+    .dash-top-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .la-court-card {
+        flex-direction: row;
+    }
+
+    .la-court-card img {
+        width: 40%;
+        height: auto;
+        min-height: 180px;
+    }
+
+    .week-strip {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .greeting {
+        font-size: 32px;
+    }
+
+    .reminder {
+        flex-wrap: wrap;
+    }
+
+    .reminder .btn {
+        margin-left: 30px;
+    }
+
+    .ticket {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ticket-stub {
+        flex-direction: row;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        border-right: none;
+        border-bottom: 2px dashed rgba(11, 11, 12, 0.55);
+    }
+
+    .ticket-stub::before,
+    .ticket-stub::after {
+        top: auto;
+        bottom: -9px;
+    }
+
+    .ticket-stub::before { left: -8px; right: auto; }
+    .ticket-stub::after { right: -8px; }
+
+    .ticket-day {
+        font-size: 40px;
+    }
+
+    .ticket-time {
+        font-size: 34px;
+    }
+
+    .ticket-body {
+        padding: var(--space-4);
+    }
+
+    .ticket-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3) var(--space-5);
+    }
+
+    .la-court-card {
+        flex-direction: column;
+    }
+
+    .la-court-card img {
+        width: 100%;
+        height: 150px;
+        min-height: 0;
+    }
+
+    .week-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stat-value {
+        font-size: 32px;
+    }
 }

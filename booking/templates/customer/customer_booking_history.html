@@ -1,15 +1,12 @@
 {% load static %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_booking_histor.css' %}">
-</head>
-<div class="page-content" id="page-history">
-    <div class="section-header">
-        <div class="section-title">Booking History</div>
+<section class="page-content" id="page-history" tabindex="-1" aria-labelledby="historyTitle">
+    <div class="page-intro">
+        <h2 class="section-title" id="historyTitle">Booking History</h2>
+        <p>Completed and cancelled games, with payment and any damage charges.</p>
     </div>
 
     <div class="table-filter" data-table="historyTable">
-        <input type="search" class="form-control" data-filter="search" placeholder="Search booking #">
+        <input type="search" class="form-control" data-filter="search" placeholder="Search booking #" aria-label="Search booking history">
         <select class="form-control" data-filter="status" aria-label="Status"><option value="">Status: All</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>
         <span class="filter-label">From</span><input type="date" class="form-control" data-filter="from" aria-label="From date">
         <span class="filter-label">To</span><input type="date" class="form-control" data-filter="to" aria-label="To date">
@@ -20,77 +17,73 @@
         <table class="data-table" id="historyTable">
             <thead>
                 <tr>
-                    <th>Booking ID</th>
-                    <th>Court</th>
+                    <th>Booking</th>
                     <th>Date</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Total</th>
+                    <th>Time</th>
+                    <th class="num">Total</th>
                     <th>Payment Method</th>
                     <th>Payment Status</th>
                     <th>Booking Status</th>
-                    <th>Liabilities</th>
+                    <th class="num">Liabilities</th>
                     <th>Liabilities Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for booking in booking_history %}
                 <tr data-search="{{ booking.booking_id }}" data-status="{{ booking.booking_status }}" data-date="{{ booking.booking_date|date:'Y-m-d' }}">
-                    <td>#{{ booking.booking_id }}</td>
-                    <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                    <td>#{{ booking.booking_id }}<span class="cell-sub">{{ booking.court.court_name|default:'LA Court' }}</span></td>
                     <td>{{ booking.booking_date }}</td>
-                    <td>{{ booking.start_time|time:"H:i" }}</td>
-                    <td>{{ booking.end_time|time:"H:i" }}</td>
-                    <td>₱{{ booking.total_price }}</td>
+                    <td class="mono">{{ booking.start_time|time:"g:i A" }} – {{ booking.end_time|time:"g:i A" }}</td>
+                    <td class="num mono">₱{{ booking.total_price }}</td>
                     <td>
                         {% if booking.payment %}
                         {{ booking.payment.payment_method|default:"—" }}
                         {% else %}
-                        —
+                        <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if booking.payment %}
-                        <span>{{ booking.payment.payment_status }}</span>
+                        <span class="status-pill {{ booking.payment.payment_status|slugify }}">{{ booking.payment.payment_status }}</span>
                         {% else %}
-                        <span>Unpaid</span>
+                        <span class="status-pill unpaid">Unpaid</span>
                         {% endif %}
                     </td>
                     <td>
-                        <span>{{ booking.booking_status }}</span>
+                        <span class="status-pill {{ booking.booking_status|slugify }}">{{ booking.booking_status }}</span>
                     </td>
-                    <td>
+                    <td class="num mono">
                         {% if booking.damage_set.all %}
                         {% for damage in booking.damage_set.all %}
                         {% if damage.fee == 0 %}
-                        None
+                        <span class="text-muted">None</span>
                         {% else %}
                         ₱{{ damage.fee }}
                         {% endif %}
                         {% endfor %}
                         {% else %}
-                        —
+                        <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if booking.damage_set.all %}
                         {% for damage in booking.damage_set.all %}
                         {% if damage.fee == 0 %}
-                        No Damage
+                        <span class="status-pill no-damage">No Damage</span>
                         {% else %}
-                        {{ damage.status }}
+                        <span class="status-pill {{ damage.status|slugify }}">{{ damage.status }}</span>
                         {% endif %}
                         {% endfor %}
                         {% else %}
-                        —
+                        <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="11">
+                    <td colspan="9">
                         <div class="empty-state">
-                            <div class="empty-state-text">No booking history yet.</div>
+                            <div class="empty-state-text">No booking history yet. Completed and cancelled games will show up here.</div>
                         </div>
                     </td>
                 </tr>
@@ -98,5 +91,4 @@
             </tbody>
         </table>
     </div>
-</div>
-<script src="{% static 'js/customer/customer_booking_histor.js' %}"></script>
+</section>

@@ -13,6 +13,7 @@ urlpatterns = [
     path('booking_confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
     path('availability/',       views.customer_availability,   name='customer_availability'),
     path('weather_forecast/',   views.weather_forecast,        name='weather_forecast'),
+    path('chatbot/',            views.chatbot_message,         name='chatbot_message'),
     path('cancel_booking/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
 
     path('process_payment/',    views.process_payment,         name='process_payment'),

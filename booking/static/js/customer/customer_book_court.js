@@ -1,21 +1,39 @@
 function showPage(pageId) {
+    const page = document.getElementById('page-' + pageId);
+    if (!page) return;
     document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('page-' + pageId).classList.add('active');
+    page.classList.add('active');
 
     document.querySelectorAll('.nav-item').forEach(n => {
-        if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(`'${pageId}'`)) {
-            n.classList.add('active');
-        }
+        const on = n.dataset.page === pageId;
+        n.classList.toggle('active', on);
+        if (on) n.setAttribute('aria-current', 'page'); else n.removeAttribute('aria-current');
     });
 
     const pageNames = {
-        dashboard: 'Customer Dashboard', book: 'Book a Court',
+        dashboard: 'Dashboard', book: 'Book a Court',
         bookings: 'My Bookings', history: 'Booking History',
         payment: 'Payment', profile: 'Edit Profile'
     };
-    document.querySelector('.page-title').innerHTML =
-        pageNames[pageId]?.replace(/(\S+)$/, '<span>$1</span>') || 'Dashboard';
+    // Top bar: the page name (hidden on the Dashboard, where the greeting is the heading)
+    const title = document.querySelector('.page-title');
+    if (title) {
+        title.innerHTML = (pageNames[pageId] || 'Dashboard').replace(/(\S+)$/, '<span>$1</span>');
+        title.classList.toggle('visually-hidden', pageId === 'dashboard');
+    }
+    // "Book a court" shortcut: not needed on the Book Court page itself
+    const bookBtn = document.getElementById('topBarBook');
+    if (bookBtn) bookBtn.hidden = pageId === 'book';
+    document.title = (pageId === 'dashboard' ? 'Customer Dashboard' : pageNames[pageId] || 'Customer Dashboard') +
+        ' – Labra Basketball Court Rental';
+}
+
+// Move keyboard / screen-reader focus to the page that just opened
+function focusPage(pageId) {
+    const page = document.getElementById('page-' + pageId);
+    if (!page) return;
+    page.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
 }
 
 const TIME_START = 8 * 60;
@@ -103,8 +121,13 @@ function computePrice() {
     const totalInput = document.getElementById('totalPriceInput');
     const submitBtn = document.getElementById('submitBtn');
 
+    renderSlots();
+
     if (!start || !end || currentRate <= 0) {
-        priceText.textContent = 'Select date & time to compute';
+        priceText.textContent = !dateVal ? 'Choose a date to start.'
+            : !start ? 'Pick a start time.'
+            : !end ? 'Pick an end time to see your total.'
+            : 'Select date & time to compute';
         totalInput.value = 0;
         submitBtn.disabled = true;
         document.getElementById('bookingBreakdown').style.display = 'none';
@@ -116,9 +139,10 @@ function computePrice() {
     const totalMins = (eh * 60 + em) - (sh * 60 + sm);
 
     if (totalMins <= 0) {
-        priceText.textContent = '⚠️ End time must be after start time';
+        priceText.textContent = 'End time must be after start time.';
         totalInput.value = 0;
         submitBtn.disabled = true;
+        document.getElementById('bookingBreakdown').style.display = 'none';
         return;
     }
 
@@ -132,7 +156,7 @@ function computePrice() {
         ? `${hours} hr${hours > 1 ? 's' : ''}`
         : `${Math.floor(hours)}h ${totalMins % 60}m`;
 
-    document.getElementById('bdDate').textContent = dateVal || '—';
+    document.getElementById('bdDate').textContent = dateVal ? formatDateLabel(dateVal) : '—';
     document.getElementById('bdDuration').textContent = durationLabel;
     document.getElementById('bdTime').textContent = minutesToLabel(sh * 60 + sm) + ' – ' + minutesToLabel(eh * 60 + em);
     document.getElementById('bdTotal').textContent = '₱' + price;
@@ -141,14 +165,18 @@ function computePrice() {
 
 function updateBreakdown() { computePrice(); }
 
+function formatDateLabel(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function resetBookingForm() {
     document.getElementById('bookingDate').value = '';
+    takenIntervals = [];
     buildStartTimes();
     buildEndTimes();
-    document.getElementById('priceText').textContent = 'Select date & time to compute';
-    document.getElementById('totalPriceInput').value = 0;
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('bookingBreakdown').style.display = 'none';
+    computePrice();
     updateWeather();
 }
 
@@ -287,7 +315,103 @@ function applyAvailability() {
     if (startSel.selectedOptions[0] && startSel.selectedOptions[0].disabled) { startSel.value = ''; cleared = true; }
     if (endSel.selectedOptions[0] && endSel.selectedOptions[0].disabled) { endSel.value = ''; cleared = true; }
     if (cleared && typeof computePrice === 'function') computePrice();
+    renderSlots();
 }
+
+// ── Slot timeline: the same free / booked / past rules as the time lists ──
+// Each 30-minute block is a button. The Start/End selects stay the source of truth:
+// tapping a block sets them and fires their normal change events.
+function selectedRange() {
+    const s = document.getElementById('startTime').value;
+    const e = document.getElementById('endTime').value;
+    const toMin = v => { const [h, m] = v.split(':').map(Number); return h * 60 + m; };
+    return { start: s ? toMin(s) : null, end: e ? toMin(e) : null };
+}
+
+function renderSlots() {
+    const grid = document.getElementById('slotGrid');
+    if (!grid) return;
+    const dateVal = document.getElementById('bookingDate').value;
+    if (!dateVal || availabilityDate !== dateVal) {
+        grid.innerHTML = '';
+        const p = document.createElement('p');
+        p.className = 'slot-empty';
+        p.textContent = !dateVal ? 'Choose a date to see which times are free.' : 'Checking which times are free…';
+        grid.appendChild(p);
+        return;
+    }
+    const range = selectedRange();
+    const frag = document.createDocumentFragment();
+    for (let m = TIME_START; m < TIME_END; m += 30) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot';
+        btn.dataset.minutes = m;
+        const label = minutesToLabel(m);
+        const time = document.createElement('span');
+        time.textContent = label;
+        btn.appendChild(time);
+
+        let state = '';
+        if (isPast(m)) state = 'past';
+        else if (overlapsTaken(m, m + 30)) state = 'booked';
+
+        const inRange = range.start !== null && m >= range.start &&
+            (range.end !== null ? m < range.end : m === range.start);
+        if (state) {
+            btn.disabled = true;
+            btn.classList.add('is-' + state);
+            const note = document.createElement('span');
+            note.className = 'slot-note';
+            note.textContent = state === 'past' ? 'Past' : 'Booked';
+            btn.appendChild(note);
+            btn.setAttribute('aria-label', label + ', ' + (state === 'past' ? 'already passed' : 'booked'));
+        } else {
+            btn.setAttribute('aria-label', label + (inRange ? ', in your booking' : ', free'));
+            btn.setAttribute('aria-pressed', inRange ? 'true' : 'false');
+            if (inRange) btn.classList.add('is-selected');
+        }
+        frag.appendChild(btn);
+    }
+    grid.innerHTML = '';
+    grid.appendChild(frag);
+}
+
+function onSlotClick(minutes) {
+    const startSel = document.getElementById('startTime');
+    const endSel = document.getElementById('endTime');
+    const range = selectedRange();
+
+    // A block at or after the start sets the end (end of that block), if the whole span is free
+    if (range.start !== null && minutes >= range.start) {
+        const endVal = minutesToValue(minutes + 30);
+        const opt = Array.from(endSel.options).find(o => o.value === endVal);
+        if (opt && !opt.disabled) {
+            endSel.value = endVal;
+            endSel.dispatchEvent(new Event('change'));
+            return;
+        }
+    }
+    // Otherwise this block becomes the new start (the end list is rebuilt and cleared)
+    const startVal = minutesToValue(minutes);
+    const opt = Array.from(startSel.options).find(o => o.value === startVal);
+    if (!opt || opt.disabled) return;
+    startSel.value = startVal;
+    startSel.dispatchEvent(new Event('change'));
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const grid = document.getElementById('slotGrid');
+    if (!grid) return;
+    grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('.slot');
+        if (!btn || btn.disabled) return;
+        onSlotClick(Number(btn.dataset.minutes));
+        // keep keyboard focus on the same time after the grid re-renders
+        const again = grid.querySelector('.slot[data-minutes="' + btn.dataset.minutes + '"]');
+        if (again) again.focus();
+    });
+});
 
 function nextDay(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
@@ -298,15 +422,18 @@ function nextDay(dateStr) {
 // Load taken times for the chosen date, then grey them out. Returns a Promise.
 function refreshAvailability() {
     const dateVal = document.getElementById('bookingDate').value;
-    const box = document.getElementById('availCalendar');
-    if (!dateVal || !box) {
+    const url0 = document.getElementById('bookingDate').dataset.availabilityUrl;
+    if (!dateVal || !url0) {
         takenIntervals = [];
         applyAvailability();
         return Promise.resolve();
     }
     const requestId = ++availabilityRequest;
-    const url = box.dataset.url + '?start=' + encodeURIComponent(dateVal + 'T00:00:00') +
+    const url = url0 + '?start=' + encodeURIComponent(dateVal + 'T00:00:00') +
         '&end=' + encodeURIComponent(nextDay(dateVal) + 'T00:00:00');
+    const grid = document.getElementById('slotGrid');
+    if (grid) grid.setAttribute('aria-busy', 'true');
+    const done = function () { if (grid && requestId === availabilityRequest) grid.removeAttribute('aria-busy'); };
     return fetch(url, { credentials: 'same-origin' })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function (data) {
@@ -328,9 +455,12 @@ function refreshAvailability() {
         })
         .catch(function () {
             // If this check fails, the server still blocks double bookings on Confirm
+            if (requestId !== availabilityRequest) return;
+            availabilityDate = dateVal;
             takenIntervals = [];
             applyAvailability();
-        });
+        })
+        .then(done);
 }
 
 // Used by the availability calendar and the dashboard "This Week" strip

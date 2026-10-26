@@ -78,6 +78,12 @@ class Booking(models.Model):
                                       related_name='checked_in_bookings')
     session_ends_at = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def stage(self):
+        """Status to show: Pending, Approved, Playing, Time ended, Completed or Cancelled."""
+        from .checkin import stage
+        return stage(self)
+
     def __str__(self):
         return f"Booking {self.booking_id}"
 

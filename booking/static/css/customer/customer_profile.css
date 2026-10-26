@@ -1,100 +1,116 @@
+/* Edit Profile page. Tokens come from customer_base.css. */
+
 .profile-grid {
     display: grid;
-    grid-template-columns: 250px 1fr;
-    gap: 24px;
-    margin-top: 20px;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
 }
 
 .profile-avatar-card {
-    background: var(--dark);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-    padding: 28px;
-    text-align: center;
-}
-
-.profile-avatar-large {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--gray);
-    font-size: 36px;
-    color: var(--white);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.profile-avatar-large img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.profile-name {
-    font-weight: 700;
-    color: var(--white);
-    font-size: 16px;
-}
-
-.profile-username {
-    color: var(--gray-light);
-    font-size: 13px;
-}
-
-.profile-avatar-card {
-    background: var(--dark-2);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
+    padding: var(--space-8) var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
 }
 
 .profile-avatar-large {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
+    width: 112px;
+    height: 112px;
+    display: grid;
+    place-items: center;
     overflow: hidden;
-    background: var(--gray);
-    font-size: 36px;
-    color: var(--white);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    border-radius: 50%;
+    background: var(--orange);
+    color: var(--on-orange);
+    font-family: var(--font-display);
+    font-size: 44px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .profile-avatar-large img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
 .profile-name {
+    font-size: 18px;
     font-weight: 700;
-    color: var(--white);
-    font-size: 16px;
+    color: var(--text);
 }
 
 .profile-username {
-    color: var(--gray-light);
-    font-size: 13px;
+    font-size: 14px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
 }
 
-.btn.btn-primary {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
 }
 
-@media (max-width: 600px) {
+.profile-fieldset {
+    min-width: 0;
+    border: 0;
+}
+
+.profile-fieldset + .profile-fieldset {
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+}
+
+/* float keeps the legend inside the fieldset instead of on its top border */
+.profile-fieldset legend {
+    float: left;
+    width: 100%;
+    margin-bottom: var(--space-4);
+}
+
+.profile-fieldset .form-grid {
+    clear: both;
+}
+
+/* Two readable columns; fields don't stretch across very wide screens */
+.profile-form .form-grid {
+    max-width: 880px;
+}
+
+.profile-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+@media (max-width: 900px) {
     .profile-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-avatar-card {
+        flex-direction: row;
+        padding: var(--space-5);
+        text-align: left;
+    }
+
+    .profile-avatar-large {
+        width: 64px;
+        height: 64px;
+        font-size: 26px;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-actions .btn {
+        width: 100%;
     }
 }

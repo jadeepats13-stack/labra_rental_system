@@ -1,18 +1,14 @@
 {% load static %}
 {% load booking_extras %}
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/customer/customer_booking.css' %}">
-
-</head>
-<div class="page-content" id="page-bookings">
-    <div class="section-header">
-        <div class="section-title">My Bookings</div>
+<section class="page-content" id="page-bookings" tabindex="-1" aria-labelledby="bookingsTitle">
+    <div class="page-intro">
+        <h2 class="section-title" id="bookingsTitle">My Bookings</h2>
+        <p>Upcoming and recent games. Pay, show your check-in QR or cancel from here.</p>
     </div>
 
     <div class="table-filter" data-table="myBookingsTable">
-        <input type="search" class="form-control" data-filter="search" placeholder="Search booking #">
-        <select class="form-control" data-filter="status" aria-label="Status"><option value="">Status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Completed">Completed</option></select>
+        <input type="search" class="form-control" data-filter="search" placeholder="Search booking #" aria-label="Search bookings">
+        <select class="form-control" data-filter="status" aria-label="Status"><option value="">Status: All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Playing">Playing</option><option value="Time ended">Time ended</option><option value="Completed">Completed</option></select>
         <select class="form-control" data-filter="payment" aria-label="Payment"><option value="">Payment: All</option><option value="Paid">Paid</option><option value="Unpaid">Unpaid</option></select>
         <span class="filter-label">From</span><input type="date" class="form-control" data-filter="from" aria-label="From date">
         <span class="filter-label">To</span><input type="date" class="form-control" data-filter="to" aria-label="To date">
@@ -23,46 +19,42 @@
         <table class="data-table" id="myBookingsTable">
             <thead>
                 <tr>
-                    <th>Booking ID</th>
-                    <th>Court</th>
+                    <th>Booking</th>
                     <th>Date</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Total Price</th>
+                    <th>Time</th>
+                    <th class="num">Total</th>
                     <th>Payment</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for booking in active_booking_list %}
-                <tr data-search="{{ booking.booking_id }}" data-status="{{ booking.booking_status }}" data-payment="{% if booking.payment %}{{ booking.payment.payment_status }}{% else %}Unpaid{% endif %}" data-date="{{ booking.booking_date|date:'Y-m-d' }}">
-                    <td>#{{ booking.booking_id }}</td>
-                    <td>{{ booking.court.court_name|default:'LA Court' }}</td>
+                <tr data-search="{{ booking.booking_id }}" data-status="{{ booking.stage }}" data-payment="{% if booking.payment %}{{ booking.payment.payment_status }}{% else %}Unpaid{% endif %}" data-date="{{ booking.booking_date|date:'Y-m-d' }}">
+                    <td>#{{ booking.booking_id }}<span class="cell-sub">{{ booking.court.court_name|default:'LA Court' }}</span></td>
                     <td>{{ booking.booking_date }}</td>
-                    <td>{{ booking.start_time|time:"H:i" }}</td>
-                    <td>{{ booking.end_time|time:"H:i" }}</td>
-                    <td>₱{{ booking.total_price }}</td>
+                    <td class="mono">{{ booking.start_time|time:"g:i A" }} – {{ booking.end_time|time:"g:i A" }}</td>
+                    <td class="num mono">₱{{ booking.total_price }}</td>
                     <td>
                         {% if booking.payment %}
-                        <span>{{booking.payment.payment_status }}</span>
+                        <span class="status-pill {{ booking.payment.payment_status|slugify }}">{{ booking.payment.payment_status }}</span>
                         {% else %}
-                        <span>Unpaid</span>
+                        <span class="status-pill unpaid">Unpaid</span>
                         {% endif %}
                     </td>
                     <td>
-                        <span>{{ booking.booking_status }}</span>
+                        <span class="status-pill {{ booking.stage|slugify }}">{{ booking.stage }}</span>
                     </td>
                     <td>
                         <div class="action-btns">
                             {% if booking.booking_status == 'Pending' or booking.booking_status == 'Approved' %}
 
                             {% if not booking.payment or booking.payment.payment_status == 'Unpaid' %}
-                            <button class="btn-pay pay-now-btn" data-id="{{ booking.booking_id }}"
+                            <button type="button" class="btn-pay pay-now-btn" data-id="{{ booking.booking_id }}"
                                 data-court="{{ booking.court.court_name|default:'LA Court' }}" data-date="{{ booking.booking_date }}"
                                 data-start="{{ booking.start_time|time:'H:i' }}"
                                 data-end="{{ booking.end_time|time:'H:i' }}" data-total="{{ booking.total_price }}">
-                                Pay Now
+                                Pay now
                             </button>
                             {% endif %}
 
@@ -71,6 +63,7 @@
                                 data-code="{{ booking.confirmation_code }}" data-qr="{{ booking.confirmation_code|qr_url }}"
                                 data-id="{{ booking.booking_id }}" data-when="{{ booking.booking_date|date:'D, M j' }} · {{ booking.start_time|time:'g:i A' }} – {{ booking.end_time|time:'g:i A' }}"
                                 data-paid="{% if booking.payment and booking.payment.payment_status == 'Paid' %}1{% else %}0{% endif %}">
+                                <svg class="icon" aria-hidden="true"><use href="#i-qr"/></svg>
                                 Check-in QR
                             </button>
                             {% endif %}
@@ -79,7 +72,7 @@
                             <form method="POST" action="{% url 'cancel_booking' booking.booking_id %}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-cancel"
-                                    onclick="return confirm('Cancel booking #{{ booking.booking_id }}?')">
+                                    onclick="return confirm('Cancel booking #{{ booking.booking_id }}? This can\'t be undone.')">
                                     Cancel
                                 </button>
                             </form>
@@ -95,9 +88,10 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9">
+                    <td colspan="7">
                         <div class="empty-state">
                             <div class="empty-state-text">No active bookings found.</div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="showPage('book')">Book the LA Court</button>
                         </div>
                     </td>
                 </tr>
@@ -105,9 +99,4 @@
             </tbody>
         </table>
     </div>
-</div>
-<script src="{% static 'js/customer/customer_payment_moda.js' %}"></script>
-
-</body>
-
-</html>
+</section>
