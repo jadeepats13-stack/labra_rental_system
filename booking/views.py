@@ -182,6 +182,13 @@ def customer_dashboard(request):
     if not customer_id:
         return redirect('login')
 
+    customer = Customer.objects.filter(customer_id=customer_id).first()
+    if not customer:
+        # The account was deleted (e.g. records were reset) while still logged in
+        request.session.flush()
+        messages.error(request, 'Your session has ended. Please log in again.')
+        return redirect('login')
+
     customer = Customer.objects.get(customer_id=customer_id)
     # Single LA court (kept as a list so the existing templates still work)
     courts = Court.objects.order_by('court_id')
