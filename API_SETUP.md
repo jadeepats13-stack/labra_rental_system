@@ -249,7 +249,7 @@ The browser asks for camera permission the first time. Cameras work on `http://1
 - Admin accounts have no email, so "Forgot password" is for customers only.
 
 **Setup (EmailJS free plan allows 2 templates: the booking email + this "message" template)**
-The second template is a general one: it sends the 6-digit codes **and** the landing page contact form.
+The second template is a general one: the server writes each email (the 6-digit codes) and sends it through it.
 1. EmailJS dashboard → **Email Templates → Create New Template** (or edit the code template you made earlier).
 2. **Subject:** `{{subject}}`
 3. **Content:** `{{{message}}}` (three braces, so line breaks show)
@@ -257,11 +257,10 @@ The second template is a general one: it sends the 6-digit codes **and** the lan
 5. Save, copy the **Template ID**, and add to `.env`:
    ```
    EMAILJS_CODE_TEMPLATE_ID=template_xxxxxxx
-   CONTACT_EMAIL=the-inbox-that-should-get-contact-messages@gmail.com
    ```
 6. Run `python manage.py migrate`, then restart the server.
 
-**Contact form:** messages are sent by our server (the old in-page EmailJS script is gone), to `CONTACT_EMAIL`, with Reply-To set to the visitor, so pressing Reply in Gmail answers them. Limit: 3 messages per visitor per hour.
+**Contact section:** the landing page has no message form. Visitors call, email (opens their email app), ask Labra Assistant, or open Google Maps directions.
 
 **Test it**
 1. Sign up with an email you can open. The pop-up asks for the code, and the email arrives (check Spam).

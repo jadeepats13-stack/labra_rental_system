@@ -70,40 +70,6 @@ def chatbot_message(request):
     return JsonResponse(result)
 
 
-def contact_message(request):
-    """
-    Landing page contact form. Sent from our server with EmailJS (the keys never
-    reach the browser) to CONTACT_EMAIL, with Reply-To set to the visitor.
-    Limited to 3 messages per visitor per hour so the free email quota lasts.
-    """
-    from django.core.cache import cache
-    from .services.emailjs import send_contact_email
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    data = _json_body(request)
-    name = str(data.get('name', '')).strip()[:100]
-    email = str(data.get('email', '')).strip()[:254]
-    message = str(data.get('message', '')).strip()[:2000]
-    if not name or not email or not message:
-        return JsonResponse({'ok': False, 'message': 'Please fill in your name, email and message.'})
-    try:
-        validate_email(email)
-    except ValidationError:
-        return JsonResponse({'ok': False, 'message': 'Please enter a valid email address.'})
-
-    key = 'contact:' + (request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
-                        or request.META.get('REMOTE_ADDR', ''))
-    cache.add(key, 0, 3600)
-    if cache.incr(key) > 3:
-        return JsonResponse({'ok': False, 'message': 'You have sent a few messages already. '
-                                                     'Please try again later or call us.'})
-
-    sent, error = send_contact_email(name, email, message)
-    if not sent:
-        return JsonResponse({'ok': False, 'message': error})
-    return JsonResponse({'ok': True, 'message': "Thanks! Your message was sent. We'll reply by email."})
-
-
 def home(request):
     return _landing(request)
 
@@ -771,7 +737,7 @@ def update_profile(request):
             if new_password != confirm_password:
                 messages.error(request, 'Passwords do not match.')
                 return _customer_page(request, 'profile')
-            customer.password = new_password  # use make_password in production
+            customer.password = make_password(new_password)  # stored hashed, like at sign-up
 
         customer.save()
         messages.success(request, 'Profile updated successfully.')

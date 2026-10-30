@@ -90,9 +90,9 @@ def send_booking_confirmation(booking):
     return False, 'We could not send your confirmation email right now.'
 
 
-# ─── Second template: short messages (codes + contact form) ─────────
+# ─── Second template: short messages (the 6-digit codes) ─────────────
 # The free EmailJS plan allows 2 templates: the booking email above, and this
-# general "message" template (EMAILJS_CODE_TEMPLATE_ID) with:
+# general "message" template (EMAILJS_CODE_TEMPLATE_ID, used for the 6-digit codes) with:
 #     To Email: {{to_email}}    Reply To: {{reply_to}}
 #     Subject:  {{subject}}     Content:  {{{message}}}
 # (three braces so the line breaks in the message show up)
@@ -147,12 +147,3 @@ def send_code_email(customer, code, purpose, minutes):
                        if error.startswith('Email is not set up') else
                        'We could not send the code right now. Please try again in a minute.')
     return True, 'Code sent.'
-
-
-def send_contact_email(name, email, message):
-    """Landing page contact form -> the court's inbox (CONTACT_EMAIL). Reply goes to the visitor."""
-    body = escape(message).replace('\n', '<br>')
-    message_html = (f'New message from the website contact form.<br><br>'
-                    f'<b>Name:</b> {escape(name)}<br><b>Email:</b> {escape(email)}<br><br>{body}')
-    return send_message_email(getattr(settings, 'CONTACT_EMAIL', ''),
-                              f'Website message from {name}', message_html, reply_to=email)
