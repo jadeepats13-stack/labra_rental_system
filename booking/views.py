@@ -318,6 +318,16 @@ def book_court(request):
         messages.error(request, 'Invalid time format.')
         return _customer_page(request, 'book')
 
+    if end_time <= start_time:
+        messages.error(request, 'End time must be after the start time.')
+        return _customer_page(request, 'book')
+    if start_time < time(availability.OPEN_HOUR) or end_time > time(availability.CLOSE_HOUR):
+        messages.error(request, 'The court is open from 8:00 AM to 10:00 PM.')
+        return _customer_page(request, 'book')
+    if start_time.minute % availability.SLOT_MINUTES or end_time.minute % availability.SLOT_MINUTES:
+        messages.error(request, 'Please choose times on the hour or half hour.')
+        return _customer_page(request, 'book')
+
     # ── Validate that booking is not in the past ──────────
     try:
         booking_date_obj = date.fromisoformat(booking_date)
