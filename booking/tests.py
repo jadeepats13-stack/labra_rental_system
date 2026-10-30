@@ -27,7 +27,7 @@ API_SETTINGS = dict(
     COURT_WEATHER_CITY='Iligan City,PH',
     EMAILJS_SERVICE_ID='service_test', EMAILJS_TEMPLATE_ID='template_test',
     EMAILJS_PUBLIC_KEY='public_test', EMAILJS_PRIVATE_KEY='private_test',
-    EMAILJS_CODE_TEMPLATE_ID='template_code_test', CONTACT_EMAIL='court@example.com',
+    EMAILJS_CODE_TEMPLATE_ID='template_code_test',
     GOOGLE_CLIENT_ID='client-id-test', GOOGLE_CLIENT_SECRET='client-secret-test',
     GOOGLE_REDIRECT_URI='http://127.0.0.1:8000/oauth2callback/',
 )
@@ -1786,52 +1786,32 @@ class EmailCodeTests(BaseTestCase):
         self.assertIn('Forgot password?', html)
 
 
-class ContactFormTests(BaseTestCase):
-    def send(self, **data):
-        body = {'name': 'Jadee', 'email': 'jadee@example.com', 'message': 'Is the court open on Sunday?\n<b>hi</b>'}
-        body.update(data)
-        return self.client.post(reverse('contact_message'), json.dumps(body), content_type='application/json').json()
-
-    def test_sends_to_the_court_inbox_with_reply_to_visitor(self):
-        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
-            data = self.send()
-        self.assertTrue(data['ok'])
-        payload = post.call_args.kwargs['json']
-        self.assertEqual(payload['template_id'], 'template_code_test')
-        self.assertEqual(payload['accessToken'], 'private_test')            # private key used on the server only
-        params = payload['template_params']
-        self.assertEqual(params['to_email'], 'court@example.com')
-        self.assertEqual(params['reply_to'], 'jadee@example.com')
-        self.assertEqual(params['subject'], 'Website message from Jadee')
-        self.assertIn('Is the court open on Sunday?<br>&lt;b&gt;hi&lt;/b&gt;', params['message'])   # escaped
-
-    def test_validation(self):
-        self.assertFalse(self.send(message='')['ok'])
-        self.assertIn('valid email', self.send(email='nope')['message'])
-
-    def test_three_messages_per_hour(self):
-        for _ in range(3):
-            self.assertTrue(self.send()['ok'])
-        self.assertFalse(self.send()['ok'])
-
-    def test_failure_reported(self):
-        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(400, text='bad')):
-            data = self.send()
-        self.assertFalse(data['ok'])
-        self.assertIn('could not send', data['message'])
-
-    @override_settings(CONTACT_EMAIL='')
-    def test_not_set_up(self):
-        self.assertIn('not set up', self.send()['message'])
-
-    def test_no_emailjs_keys_on_the_page(self):
+class ContactSectionTests(BaseTestCase):
+    def test_contact_cards_replace_the_form(self):
         html = self.client.get(reverse('home')).content.decode()
+        section = html.split('id="contact"')[1].split('</section>')[0]
+        for text in ['Questions?', 'Zone 7, Tambacan Street, Iligan City', '+63 912 345 6789',
+                     'jadeegonzaga.patilan@my.smciligan.edu.ph', 'Call or text', 'Send an email',
+                     'Ask Labra Assistant', 'Get directions', 'Open every day, 8:00 AM']:
+            self.assertIn(text, section)
+        self.assertIn('href="tel:+639123456789"', section)
+        self.assertIn('href="mailto:jadeegonzaga.patilan@my.smciligan.edu.ph', section)
+        self.assertIn('data-open-chat', section)
+        self.assertNotIn('<form', section)
         self.assertNotIn('emailjs', html.lower())
-        self.assertNotIn('public_test', html)
-        self.assertIn(reverse('contact_message'), html)
 
-    def test_get_not_allowed(self):
-        self.assertEqual(self.client.get(reverse('contact_message')).status_code, 405)
+
+class ProfilePasswordTests(BaseTestCase):
+    def test_new_password_is_hashed_and_works_for_login(self):
+        self.login_customer()
+        self.client.post(reverse('update_profile'), {'firstname': 'Juan', 'lastname': 'Cruz', 'username': 'juan',
+                                                     'email': 'juan@example.com', 'new_password': 'N3wPass!word',
+                                                     'confirm_password': 'N3wPass!word'})
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.password.startswith('pbkdf2_'))
+        self.client.logout()
+        resp = self.client.post(reverse('login'), {'username': 'juan', 'password': 'N3wPass!word'})
+        self.assertRedirects(resp, reverse('customer_dashboard'), fetch_redirect_response=False)
 
 
 class CodeEmailContentTests(BaseTestCase):
