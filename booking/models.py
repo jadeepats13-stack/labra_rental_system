@@ -9,6 +9,8 @@ class Customer(models.Model):
     password = models.CharField(max_length=255)
     # Used by EmailJS to send the booking confirmation email
     email = models.EmailField(max_length=254, blank=True, default='')
+    # True once the customer typed the code we emailed them (needed to log in)
+    email_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
@@ -137,3 +139,28 @@ class GoogleCalendarToken(models.Model):
 
     def __str__(self):
         return f"Google Calendar for {self.admin.username}"
+
+
+class EmailCode(models.Model):
+    """
+    6-digit code emailed to a customer, for confirming their email after
+    sign-up or for resetting a forgotten password. Stored hashed (like a
+    password); valid for 10 minutes, one use, 5 tries.
+    """
+    VERIFY = 'verify'
+    RESET = 'reset'
+    PURPOSES = [(VERIFY, 'Confirm email'), (RESET, 'Reset password')]
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='email_codes')
+    purpose = models.CharField(max_length=10, choices=PURPOSES)
+    code_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_purpose_display()} code for {self.customer.username}"
