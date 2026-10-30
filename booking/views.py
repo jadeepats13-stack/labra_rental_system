@@ -307,7 +307,7 @@ def book_court(request):
     booking_date   = request.POST.get('booking_date')
     start_time_str = request.POST.get('start_time')
     end_time_str   = request.POST.get('end_time')
-    total_price    = request.POST.get('total_price', '0')
+    # total_price    = request.POST.get('total_price', '0')
 
     # Parse times to time objects
     from datetime import time, datetime, date
@@ -359,15 +359,11 @@ def book_court(request):
         return _customer_page(request, 'book')
 
     # Convert total_price to Decimal
-    try:
-        total_price_decimal = Decimal(total_price)
-        if total_price_decimal <= 0:
-            raise ValueError
-    except Exception:
-        messages.error(request, 'Invalid total price. Check your time selection.')
-        return _customer_page(request, 'book')
-
     court = get_object_or_404(Court, pk=court_id, court_status='Available')
+
+    # Price = court rate x booked hours, calculated on the server so it can't be changed in the browser
+    minutes = (end_time.hour * 60 + end_time.minute) - (start_time.hour * 60 + start_time.minute)
+    total_price_decimal = (court.rate_per_hour * Decimal(minutes) / Decimal(60)).quantize(Decimal('0.01'))
 
     # Check for time conflicts
     # (a booking whose playing time already ended no longer holds its slot)
