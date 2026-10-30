@@ -27,7 +27,7 @@ API_SETTINGS = dict(
     COURT_WEATHER_CITY='Iligan City,PH',
     EMAILJS_SERVICE_ID='service_test', EMAILJS_TEMPLATE_ID='template_test',
     EMAILJS_PUBLIC_KEY='public_test', EMAILJS_PRIVATE_KEY='private_test',
-    EMAILJS_CODE_TEMPLATE_ID='template_code_test',
+    EMAILJS_CODE_TEMPLATE_ID='template_code_test', CONTACT_EMAIL='court@example.com',
     GOOGLE_CLIENT_ID='client-id-test', GOOGLE_CLIENT_SECRET='client-secret-test',
     GOOGLE_REDIRECT_URI='http://127.0.0.1:8000/oauth2callback/',
 )
@@ -1784,3 +1784,63 @@ class EmailCodeTests(BaseTestCase):
                              fetch_redirect_response=False)
         html = self.client.get(reverse('login')).content.decode()
         self.assertIn('Forgot password?', html)
+
+
+class ContactFormTests(BaseTestCase):
+    def send(self, **data):
+        body = {'name': 'Jadee', 'email': 'jadee@example.com', 'message': 'Is the court open on Sunday?\n<b>hi</b>'}
+        body.update(data)
+        return self.client.post(reverse('contact_message'), json.dumps(body), content_type='application/json').json()
+
+    def test_sends_to_the_court_inbox_with_reply_to_visitor(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            data = self.send()
+        self.assertTrue(data['ok'])
+        payload = post.call_args.kwargs['json']
+        self.assertEqual(payload['template_id'], 'template_code_test')
+        self.assertEqual(payload['accessToken'], 'private_test')            # private key used on the server only
+        params = payload['template_params']
+        self.assertEqual(params['to_email'], 'court@example.com')
+        self.assertEqual(params['reply_to'], 'jadee@example.com')
+        self.assertEqual(params['subject'], 'Website message from Jadee')
+        self.assertIn('Is the court open on Sunday?<br>&lt;b&gt;hi&lt;/b&gt;', params['message'])   # escaped
+
+    def test_validation(self):
+        self.assertFalse(self.send(message='')['ok'])
+        self.assertIn('valid email', self.send(email='nope')['message'])
+
+    def test_three_messages_per_hour(self):
+        for _ in range(3):
+            self.assertTrue(self.send()['ok'])
+        self.assertFalse(self.send()['ok'])
+
+    def test_failure_reported(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(400, text='bad')):
+            data = self.send()
+        self.assertFalse(data['ok'])
+        self.assertIn('could not send', data['message'])
+
+    @override_settings(CONTACT_EMAIL='')
+    def test_not_set_up(self):
+        self.assertIn('not set up', self.send()['message'])
+
+    def test_no_emailjs_keys_on_the_page(self):
+        html = self.client.get(reverse('home')).content.decode()
+        self.assertNotIn('emailjs', html.lower())
+        self.assertNotIn('public_test', html)
+        self.assertIn(reverse('contact_message'), html)
+
+    def test_get_not_allowed(self):
+        self.assertEqual(self.client.get(reverse('contact_message')).status_code, 405)
+
+
+class CodeEmailContentTests(BaseTestCase):
+    def test_code_email_uses_the_message_template(self):
+        from .services.emailjs import send_code_email
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            self.assertTrue(send_code_email(self.customer, '123456', 'verify', 10)[0])
+        params = post.call_args.kwargs['json']['template_params']
+        self.assertEqual(params['subject'], '123456 is your code – Confirm your email')
+        self.assertIn('123456', params['message'])
+        self.assertIn('Hi Juan Cruz', params['message'])
+        self.assertEqual(params['to_email'], 'juan@example.com')
