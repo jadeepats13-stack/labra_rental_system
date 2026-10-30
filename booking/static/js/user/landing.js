@@ -1,5 +1,7 @@
 /*
  * Landing page: mobile menu + Log in / Sign up pop-up.
+ * The pop-up also has the "Confirm your email" (6-digit code), "Forgot
+ * password" and "Set a new password" steps; only Log in / Sign up show tabs.
  * The forms post to /login/ and /register/; the server re-checks everything.
  * These checks only give quicker feedback (e.g. an invalid email).
  */
@@ -27,7 +29,14 @@
     }
 
     // ── Pop-up ─────────────────────────────────────────────────
+    const TITLES = {
+        login: 'Welcome back', register: 'Create your account', verify: 'Confirm your email',
+        forgot: 'Forgot password', reset: 'Set a new password',
+    };
+
     function selectTab(name) {
+        const tabs = document.querySelector('.auth-tabs');
+        if (tabs) tabs.hidden = !(name === 'login' || name === 'register');
         document.querySelectorAll('.auth-tab').forEach(function (t) {
             const on = t.dataset.tab === name;
             t.classList.toggle('active', on);
@@ -36,7 +45,7 @@
         document.querySelectorAll('.auth-form').forEach(function (f) {
             f.hidden = f.dataset.panel !== name;
         });
-        el('authTitle').textContent = name === 'register' ? 'Create your account' : 'Welcome back';
+        el('authTitle').textContent = TITLES[name] || 'Welcome back';
     }
 
     function openAuth(name, keepMessages) {
@@ -58,7 +67,7 @@
         document.body.style.overflow = '';
         if (lastFocus) lastFocus.focus();
         // leave /login/ or /register/ so a refresh doesn't reopen the pop-up
-        if (/\/(login|register)\/?$/.test(window.location.pathname)) {
+        if (/\/(login|register|verify-email|forgot-password|reset-password)\/?$/.test(window.location.pathname)) {
             history.replaceState(null, '', '/');
         }
     }
@@ -110,6 +119,83 @@
         if (firstBad) { e.preventDefault(); firstBad.focus(); }
     }
 
+    // ── 6-digit code boxes ─────────────────────────────────────
+    function setupCodeBoxes() {
+        document.querySelectorAll('[data-otp]').forEach(function (group) {
+            const boxes = Array.from(group.querySelectorAll('.otp-box'));
+            const hidden = group.querySelector('input[name=code]');
+            const sync = function () { hidden.value = boxes.map(function (b) { return b.value; }).join(''); };
+            function fill(from, digits) {
+                digits.split('').forEach(function (d, i) { if (boxes[from + i]) boxes[from + i].value = d; });
+                const next = boxes[Math.min(from + digits.length, boxes.length - 1)];
+                next.focus();
+                sync();
+            }
+            boxes.forEach(function (box, i) {
+                box.addEventListener('input', function () {
+                    const digits = box.value.replace(/\D/g, '');
+                    box.value = '';
+                    if (digits) fill(i, digits.slice(0, boxes.length - i));   // typing or phone autofill
+                    else sync();
+                });
+                box.addEventListener('keydown', function (e) {
+                    if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i - 1].value = ''; boxes[i - 1].focus(); sync(); e.preventDefault(); }
+                    if (e.key === 'ArrowLeft' && i > 0) boxes[i - 1].focus();
+                    if (e.key === 'ArrowRight' && i < boxes.length - 1) boxes[i + 1].focus();
+                });
+                box.addEventListener('paste', function (e) {
+                    const digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                    if (!digits) return;
+                    e.preventDefault();
+                    fill(0, digits.slice(0, boxes.length));
+                });
+                box.addEventListener('focus', function () { box.select(); });
+            });
+        });
+    }
+
+    function codeReady(form) {
+        const group = form.querySelector('[data-otp]');
+        const error = form.querySelector('[data-otp-error]');
+        const ok = /^\d{6}$/.test(group.querySelector('input[name=code]').value);
+        error.textContent = ok ? '' : 'Enter all 6 digits of the code.';
+        group.classList.toggle('invalid', !ok);
+        if (!ok) group.querySelector('.otp-box').focus();
+        return ok;
+    }
+
+    // "Resend code" waits 60 seconds between emails (the server checks this too)
+    function setupResendTimers() {
+        document.querySelectorAll('[data-resend]').forEach(function (btn) {
+            const label = btn.textContent;
+            let left = parseInt(btn.dataset.wait || '0', 10);
+            function tick() {
+                btn.disabled = left > 0;
+                btn.textContent = left > 0 ? label + ' (' + left + 's)' : label;
+                if (left-- > 0) setTimeout(tick, 1000);
+            }
+            tick();
+        });
+    }
+
+    function validateForgot(e) {
+        const input = el('forgotEmail');
+        const v = input.value.trim();
+        const message = !v ? 'Enter your email address.' : (!EMAIL.test(v) ? 'Enter a valid email address, e.g. name@gmail.com.' : '');
+        showError(input, el('forgotEmailError'), message);
+        if (message) { e.preventDefault(); input.focus(); }
+    }
+
+    function validateReset(e) {
+        const form = e.target;
+        if (!codeReady(form)) { e.preventDefault(); return; }
+        const pw = el('resetPassword');
+        const confirm = el('resetConfirm');
+        const message = !pw.value ? 'Enter a new password.' : (pw.value !== confirm.value ? 'Passwords do not match.' : '');
+        showError(confirm, el('resetPasswordError'), message);
+        if (message) { e.preventDefault(); (pw.value ? confirm : pw).focus(); }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         setupMenu();
         const modal = el('authModal');
@@ -147,6 +233,15 @@
         });
         modal.querySelector('[data-panel=login]').addEventListener('submit', validateLogin);
         modal.querySelector('[data-panel=register]').addEventListener('submit', validateRegister);
+
+        setupCodeBoxes();
+        setupResendTimers();
+        const forgot = modal.querySelector('[data-panel=forgot]');
+        if (forgot) forgot.addEventListener('submit', validateForgot);
+        const reset = modal.querySelector('[data-panel=reset]');
+        if (reset) reset.addEventListener('submit', validateReset);
+        const verify = modal.querySelector('[data-panel=verify]');
+        if (verify) verify.addEventListener('submit', function (e) { if (!codeReady(verify)) e.preventDefault(); });
 
         // /login/ and /register/ open the pop-up straight away (with any server message)
         if (modal.dataset.open) openAuth(modal.dataset.open, true);

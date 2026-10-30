@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/user/landing.css' %}">
+    <link rel="stylesheet" href="{% static 'css/user/landing.css' %}?v=3">
     <link rel="stylesheet" href="{% static 'css/user/chatbot.css' %}?v=1">
 </head>
 
@@ -184,6 +184,7 @@
                         <button type="button" class="pw-toggle" aria-label="Show password">Show</button>
                     </div>
                 </label>
+                <div class="auth-forgot"><button type="button" data-tab-link="forgot">Forgot password?</button></div>
                 <button type="submit" class="btn btn-solid btn-block">Log in</button>
                 <p class="auth-switch">New here? <button type="button" data-tab-link="register">Create an account</button></p>
             </form>
@@ -219,12 +220,59 @@
                 <button type="submit" class="btn btn-solid btn-block">Create account</button>
                 <p class="auth-switch">Already have an account? <button type="button" data-tab-link="login">Log in</button></p>
             </form>
+
+            <!-- Confirm email: 6-digit code sent after sign-up (needed before the first login) -->
+            <form class="auth-form" data-panel="verify" method="POST" action="{% url 'verify_email' %}" novalidate>
+                {% csrf_token %}
+                <p class="auth-lead">We sent a 6-digit code to <strong>{{ verify_email_masked|default:'your email' }}</strong>.
+                    It expires in 10 minutes. Check your Spam folder if you can't find it.</p>
+                {% include 'user/otp_boxes.html' %}
+                <button type="submit" class="btn btn-solid btn-block">Confirm email</button>
+                <p class="auth-switch">Didn't get it?
+                    <button type="submit" form="verifyResendForm" data-resend data-wait="{{ resend_wait|default:0 }}">Resend code</button></p>
+            </form>
+            <form id="verifyResendForm" method="POST" action="{% url 'verify_email_resend' %}" hidden>{% csrf_token %}</form>
+
+            <!-- Forgot password: step 1, the email -->
+            <form class="auth-form" data-panel="forgot" method="POST" action="{% url 'forgot_password' %}" novalidate>
+                {% csrf_token %}
+                <p class="auth-lead">Enter the email you signed up with and we'll send you a 6-digit code.</p>
+                <label class="field"><span>Email</span>
+                    <input type="email" name="email" id="forgotEmail" autocomplete="email" placeholder="name@gmail.com"
+                        value="{{ auth_form.reset_email|default:'' }}" required>
+                    <small class="field-error" id="forgotEmailError"></small>
+                </label>
+                <button type="submit" class="btn btn-solid btn-block">Send code</button>
+                <p class="auth-switch">Remembered it? <button type="button" data-tab-link="login">Back to log in</button></p>
+            </form>
+
+            <!-- Forgot password: step 2, the code and a new password -->
+            <form class="auth-form" data-panel="reset" method="POST" action="{% url 'reset_password' %}" novalidate>
+                {% csrf_token %}
+                <p class="auth-lead">Enter the code sent to <strong>{{ reset_email_masked|default:'your email' }}</strong>
+                    and choose a new password. The code expires in 10 minutes.</p>
+                {% include 'user/otp_boxes.html' %}
+                <div class="field-row">
+                    <label class="field"><span>New password</span>
+                        <input type="password" name="password" id="resetPassword" autocomplete="new-password" required>
+                    </label>
+                    <label class="field"><span>Confirm password</span>
+                        <input type="password" name="confirm_password" id="resetConfirm" autocomplete="new-password" required>
+                    </label>
+                </div>
+                <small class="field-error" id="resetPasswordError"></small>
+                <button type="submit" class="btn btn-solid btn-block">Change password</button>
+                <p class="auth-switch">Didn't get it?
+                    <button type="submit" form="resetResendForm" data-resend data-wait="{{ resend_wait|default:0 }}">Resend code</button>
+                    · <button type="button" data-tab-link="forgot">Use another email</button></p>
+            </form>
+            <form id="resetResendForm" method="POST" action="{% url 'forgot_password_resend' %}" hidden>{% csrf_token %}</form>
         </div>
     </div>
 
     {% include 'user/chatbot.html' %}
 
-    <script src="{% static 'js/user/landing.js' %}?v=2"></script>
+    <script src="{% static 'js/user/landing.js' %}?v=3"></script>
     <script src="{% static 'js/user/chatbot.js' %}?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script>

@@ -523,6 +523,62 @@ input.invalid { border-color: var(--red); }
     padding: 0;
 }
 
+/* ── Forgot password link, code steps ── */
+.auth-tabs[hidden] { display: none; }
+
+/* Long titles ("Set a new password") stay clear of the close button */
+.auth-title { padding-right: 36px; }
+
+/* The chat bubble waits while the pop-up is open */
+.auth-overlay:not([hidden]) ~ .cb { display: none; }
+
+.auth-forgot {
+    margin-top: -6px;
+    text-align: right;
+}
+
+.auth-forgot button {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--orange);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.auth-lead {
+    margin: 0;
+    font-size: 15px;
+    color: var(--gray-light);
+}
+
+.auth-lead strong { color: var(--white); }
+
+.otp {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.otp .otp-box {
+    width: 100%;
+    height: 56px;
+    padding: 0;
+    text-align: center;
+    font-family: 'Bebas Neue', 'Barlow', sans-serif;
+    font-size: 30px;
+    letter-spacing: 0;
+}
+
+.otp.invalid .otp-box { border-color: var(--red); }
+
+.auth-switch button:disabled {
+    color: var(--gray);
+    cursor: default;
+}
+
 /* ── Responsive ── */
 @media (max-width: 960px) {
     .hero-inner { grid-template-columns: 1fr; padding-top: 140px; }

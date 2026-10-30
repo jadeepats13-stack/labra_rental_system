@@ -23,6 +23,8 @@ from .services import google_calendar
 from .services.qr_code import qr_image_url
 from . import checkin
 from . import chatbot
+from . import email_codes
+from .models import EmailCode
 import secrets
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -42,6 +44,10 @@ def _landing(request, auth_tab=''):
         'open_hours_per_day': availability.OPEN_HOURS_PER_DAY,
         'today_weather': today_weather,
         'auth_tab': auth_tab,
+        # Email confirmation / password reset steps of the pop-up
+        'verify_email_masked': _pending_verify_email(request),
+        'reset_email_masked': email_codes.mask_email(request.session.get('reset_email', '')),
+        'resend_wait': _resend_wait(request, auth_tab),
         # values typed before an error, so the user doesn't retype them (never passwords)
         'auth_form': request.session.pop('auth_form', {}),
         'logged_in_customer': bool(request.session.get('customer_id')),
@@ -101,16 +107,15 @@ def register(request):
     if Customer.objects.filter(email__iexact=email).exists():
         return _auth_error(request, 'register', 'That email is already registered. Log in instead.', form)
 
-    Customer.objects.create(
+    customer = Customer.objects.create(
         firstname=firstname,
         lastname=lastname,
         username=username,
         password=make_password(password),
         email=email,
+        email_verified=False,           # confirmed with the emailed code before the first login
     )
-    messages.success(request, 'Account created. You can log in now.')
-    request.session['auth_form'] = {'identifier': username}
-    return redirect('login')
+    return _start_email_verification(request, customer)
 
 
 def customer_login(request):
@@ -159,11 +164,160 @@ def customer_login(request):
         if not user or not check_password(password, user.password):
             return _auth_error(request, 'login', 'Incorrect username or password.', form)
 
+    if not user.email_verified:
+        # Correct password, but the email isn't confirmed yet: send a code first
+        return _start_email_verification(request, user, from_login=True)
+
+    _log_in_customer(request, user)
+    return redirect("customer_dashboard")
+
+
+def _log_in_customer(request, user):
     request.session['customer_id'] = user.customer_id
     request.session['username'] = user.username
     request.session['firstname'] = user.firstname
     request.session['lastname'] = user.lastname
-    return redirect("customer_dashboard")
+
+
+# ─── Email confirmation (6-digit code after sign-up) ───────────────
+
+def _pending_verify_customer(request):
+    customer_id = request.session.get('verify_customer_id')
+    return Customer.objects.filter(customer_id=customer_id).first() if customer_id else None
+
+
+def _pending_verify_email(request):
+    customer = _pending_verify_customer(request)
+    return email_codes.mask_email(customer.email) if customer else ''
+
+
+def _start_email_verification(request, customer, from_login=False):
+    """Send a confirmation code and open the "Enter the code" step of the pop-up."""
+    request.session['verify_customer_id'] = customer.customer_id
+    wait = email_codes.seconds_until_resend(customer, EmailCode.VERIFY)
+    if wait and from_login:
+        # A code was sent less than a minute ago: let them use it
+        messages.info(request, 'Please confirm your email first. Enter the code we just sent you.')
+    else:
+        sent, message = email_codes.send_code(customer, EmailCode.VERIFY)
+        if sent:
+            intro = 'Please confirm your email first. ' if from_login else 'Account created. '
+            messages.success(request, intro + message)
+        else:
+            messages.error(request, message)
+    return redirect('verify_email')
+
+
+def verify_email(request):
+    customer = _pending_verify_customer(request)
+    if not customer:
+        return redirect('login')
+    if customer.email_verified:
+        request.session.pop('verify_customer_id', None)
+        messages.success(request, 'Your email is already confirmed. You can log in.')
+        return redirect('login')
+    if request.method != 'POST':
+        return _landing(request, 'verify')
+
+    ok, message = email_codes.check_code(customer, EmailCode.VERIFY, request.POST.get('code', ''))
+    if not ok:
+        messages.error(request, message)
+        return redirect('verify_email')
+    customer.email_verified = True
+    customer.save(update_fields=['email_verified'])
+    request.session.pop('verify_customer_id', None)
+    _log_in_customer(request, customer)
+    messages.success(request, f'Email confirmed. Welcome, {customer.firstname}!')
+    return redirect('customer_dashboard')
+
+
+def verify_email_resend(request):
+    customer = _pending_verify_customer(request)
+    if not customer:
+        return redirect('login')
+    if request.method == 'POST':
+        sent, message = email_codes.send_code(customer, EmailCode.VERIFY)
+        (messages.success if sent else messages.error)(request, message)
+    return redirect('verify_email')
+
+
+# ─── Forgot password (6-digit code, then a new password) ───────────
+
+def _reset_customer(request):
+    email = request.session.get('reset_email', '')
+    return Customer.objects.filter(email__iexact=email).order_by('customer_id').first() if email else None
+
+
+def forgot_password(request):
+    if request.method != 'POST':
+        return _landing(request, 'forgot')
+    email = request.POST.get('email', '').strip()
+    try:
+        validate_email(email)
+    except ValidationError:
+        messages.error(request, 'Please enter a valid email address.')
+        request.session['auth_form'] = {'reset_email': email}
+        return redirect('forgot_password')
+
+    request.session['reset_email'] = email
+    customer = _reset_customer(request)
+    if customer:
+        sent, message = email_codes.send_code(customer, EmailCode.RESET)
+        if not sent:
+            messages.error(request, message)
+            return redirect('reset_password')
+    # Same message whether or not the account exists (so nobody can check who has one)
+    messages.success(request, f'If an account uses {email_codes.mask_email(email)}, we sent it a 6-digit code.')
+    return redirect('reset_password')
+
+
+def forgot_password_resend(request):
+    if not request.session.get('reset_email'):
+        return redirect('forgot_password')
+    if request.method == 'POST':
+        customer = _reset_customer(request)
+        if customer:
+            sent, message = email_codes.send_code(customer, EmailCode.RESET)
+            if not sent:
+                messages.error(request, message)
+                return redirect('reset_password')
+        messages.success(request, 'If the account exists, a new code is on its way.')
+    return redirect('reset_password')
+
+
+def reset_password(request):
+    email = request.session.get('reset_email', '')
+    if not email:
+        return redirect('forgot_password')
+    if request.method != 'POST':
+        return _landing(request, 'reset')
+
+    password = request.POST.get('password', '')
+    confirm = request.POST.get('confirm_password', '')
+    if not password:
+        messages.error(request, 'Enter a new password.')
+        return redirect('reset_password')
+    if password != confirm:
+        messages.error(request, 'Passwords do not match.')
+        return redirect('reset_password')
+
+    customer = _reset_customer(request)
+    if not customer:
+        messages.error(request, 'That code is not correct.')
+        return redirect('reset_password')
+    ok, message = email_codes.check_code(customer, EmailCode.RESET, request.POST.get('code', ''))
+    if not ok:
+        messages.error(request, message)
+        return redirect('reset_password')
+
+    customer.password = make_password(password)
+    customer.email_verified = True        # they proved they own this email
+    customer.save(update_fields=['password', 'email_verified'])
+    request.session.pop('reset_email', None)
+    request.session.pop('verify_customer_id', None)
+    request.session['auth_form'] = {'identifier': customer.username}
+    messages.success(request, 'Password changed. Log in with your new password.')
+    return redirect('login')
 
 def get_logged_in_customer(request):
     """Return the Customer object for the session user, or None."""
@@ -1444,3 +1598,13 @@ def checkin_end(request):
     return JsonResponse({'found': True, 'ok': ok, 'reason': reason, 'message': message,
                          'booking': checkin.booking_summary(booking), 'now': timezone.now().isoformat()})
 
+
+def _resend_wait(request, auth_tab):
+    """Seconds before "Resend code" can be used again (the pop-up counts down)."""
+    if auth_tab == 'verify':
+        customer, purpose = _pending_verify_customer(request), EmailCode.VERIFY
+    elif auth_tab == 'reset':
+        customer, purpose = _reset_customer(request), EmailCode.RESET
+    else:
+        return 0
+    return email_codes.seconds_until_resend(customer, purpose) if customer else email_codes.RESEND_SECONDS
