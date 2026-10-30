@@ -14,19 +14,20 @@ from datetime import date, time, timedelta, datetime
 from unittest import mock
 
 import requests
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Admin, Booking, Court, Customer, Damage, GoogleCalendarToken, Payment
+from .models import Admin, Booking, Court, Customer, Damage, EmailCode, GoogleCalendarToken, Payment
 
 API_SETTINGS = dict(
     OPENWEATHER_API_KEY='test-owm-key', COURT_LATITUDE='', COURT_LONGITUDE='',
     COURT_WEATHER_CITY='Iligan City,PH',
     EMAILJS_SERVICE_ID='service_test', EMAILJS_TEMPLATE_ID='template_test',
     EMAILJS_PUBLIC_KEY='public_test', EMAILJS_PRIVATE_KEY='private_test',
+    EMAILJS_CODE_TEMPLATE_ID='template_code_test',
     GOOGLE_CLIENT_ID='client-id-test', GOOGLE_CLIENT_SECRET='client-secret-test',
     GOOGLE_REDIRECT_URI='http://127.0.0.1:8000/oauth2callback/',
 )
@@ -77,7 +78,8 @@ class BaseTestCase(TestCase):
         self.court = Court.objects.create(court_name='LA Court', rate_per_hour=200,
                                           court_status='Available', admin=self.admin)
         self.customer = Customer.objects.create(firstname='Juan', lastname='Cruz', username='juan',
-                                                password=make_password('Passw0rd!'), email='juan@example.com')
+                                                password=make_password('Passw0rd!'), email='juan@example.com',
+                                                email_verified=True)    # an existing, confirmed account
         self.book_date = timezone.localdate() + timedelta(days=2)
 
     def login_customer(self):
@@ -1417,13 +1419,15 @@ class AuthPopupTests(BaseTestCase):
         self.assertIn('value="ana3@example.com"', html)
         self.assertNotIn('Xyz12345!', html)
 
-    def test_register_success_then_popup_on_login(self):
+    def test_register_success_then_confirm_email_step(self):
         resp = self.register()
-        self.assertRedirects(resp, reverse('login'), fetch_redirect_response=False)
-        html = self.client.get(reverse('login')).content.decode()
-        self.assertIn('Account created. You can log in now.', html)
-        self.assertIn('value="ana"', html)
-        self.assertEqual(Customer.objects.get(username='ana').email, 'ana@example.com')
+        self.assertRedirects(resp, reverse('verify_email'), fetch_redirect_response=False)
+        html = self.client.get(reverse('verify_email')).content.decode()
+        self.assertIn('Account created. We sent a 6-digit code to an***@example.com.', html)
+        self.assertIn('data-open="verify"', html)
+        ana = Customer.objects.get(username='ana')
+        self.assertEqual(ana.email, 'ana@example.com')
+        self.assertFalse(ana.email_verified)
 
     def test_username_with_at_sign_rejected(self):
         self.register(username='ana@x')
@@ -1622,3 +1626,161 @@ class HeaderTests(BaseTestCase):
             text = (Path(dj.BASE_DIR) / css).read_text()
             self.assertIn('::view-transition-old(root)', text)
             self.assertIn('.theme-fading', text)
+
+
+# ───────────────────────────── Email confirmation + forgot password (6-digit codes) ─────
+class EmailCodeTests(BaseTestCase):
+    def sent_codes(self, post):
+        """Codes that were emailed (read from the mocked EmailJS calls)."""
+        return [c.kwargs['json']['template_params']['code'] for c in post.call_args_list
+                if c.kwargs['json']['template_id'] == 'template_code_test']
+
+    def register(self, post):
+        self.client.post(reverse('register'), {
+            'firstname': 'Ana', 'lastname': 'Reyes', 'username': 'ana', 'email': 'ana@example.com',
+            'password': 'Xyz12345!', 'confirm_password': 'Xyz12345!'})
+        return self.sent_codes(post)[-1]
+
+    # ── sign-up confirmation ──
+    def test_signup_code_confirms_and_logs_in(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.register(post)
+        params = post.call_args.kwargs['json']['template_params']
+        self.assertEqual(params['to_email'], 'ana@example.com')
+        self.assertEqual(params['purpose_title'], 'Confirm your email')
+        self.assertEqual(params['expires_minutes'], 10)
+        self.assertRegex(code, r'^\d{6}$')
+        stored = EmailCode.objects.get()
+        self.assertNotEqual(stored.code_hash, code)                  # stored hashed, never as plain text
+        resp = self.client.post(reverse('verify_email'), {'code': code})
+        self.assertRedirects(resp, reverse('customer_dashboard'), fetch_redirect_response=False)
+        self.assertTrue(Customer.objects.get(username='ana').email_verified)
+        self.assertIn('customer_id', self.client.session)
+
+    def test_cannot_log_in_before_confirming(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            self.register(post)
+            self.client.logout()
+            resp = self.client.post(reverse('login'), {'username': 'ana', 'password': 'Xyz12345!'})
+        self.assertRedirects(resp, reverse('verify_email'), fetch_redirect_response=False)
+        self.assertNotIn('customer_id', self.client.session)
+        self.assertEqual(self.client.get(reverse('customer_dashboard')).status_code, 302)
+        # wrong password never reaches the code step
+        self.client.logout()
+        resp = self.client.post(reverse('login'), {'username': 'ana', 'password': 'wrong'})
+        self.assertRedirects(resp, reverse('login'), fetch_redirect_response=False)
+
+    def test_wrong_code_five_tries_then_blocked(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.register(post)
+        wrong = '000000' if code != '000000' else '111111'
+        for left in [4, 3, 2, 1]:
+            html = self.client.post(reverse('verify_email'), {'code': wrong}, follow=True).content.decode()
+            self.assertIn(f'{left} {"try" if left == 1 else "tries"} left', html)
+        self.client.post(reverse('verify_email'), {'code': wrong})
+        html = self.client.post(reverse('verify_email'), {'code': code}, follow=True).content.decode()
+        self.assertIn('Too many wrong tries', html)                  # even the right code is refused now
+        self.assertFalse(Customer.objects.get(username='ana').email_verified)
+
+    def test_code_expires_after_10_minutes(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.register(post)
+        later = timezone.now() + timedelta(minutes=10, seconds=1)
+        with mock.patch('django.utils.timezone.now', return_value=later):
+            html = self.client.post(reverse('verify_email'), {'code': code}, follow=True).content.decode()
+        self.assertIn('This code has expired', html)
+
+    def test_resend_waits_60_seconds_and_old_code_stops_working(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            first = self.register(post)
+            html = self.client.post(reverse('verify_email_resend'), follow=True).content.decode()
+            self.assertIn('Please wait', html)
+            self.assertEqual(len(self.sent_codes(post)), 1)
+            later = timezone.now() + timedelta(seconds=61)
+            with mock.patch('django.utils.timezone.now', return_value=later):
+                self.client.post(reverse('verify_email_resend'))
+            second = self.sent_codes(post)[-1]
+        self.assertEqual(len(self.sent_codes(post)), 2)
+        if first != second:
+            html = self.client.post(reverse('verify_email'), {'code': first}, follow=True).content.decode()
+            self.assertIn('not correct', html)
+        resp = self.client.post(reverse('verify_email'), {'code': second})
+        self.assertRedirects(resp, reverse('customer_dashboard'), fetch_redirect_response=False)
+
+    def test_code_cannot_be_used_twice(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.register(post)
+        self.client.post(reverse('verify_email'), {'code': code})
+        self.assertFalse(EmailCode.objects.filter(used=False).exists())
+
+    def test_existing_customers_count_as_verified(self):
+        from importlib import import_module
+        from django.apps import apps as django_apps
+        Customer.objects.update(email_verified=False)
+        import_module('booking.migrations.0007_email_verification').mark_existing_customers_verified(django_apps, None)
+        self.assertTrue(Customer.objects.get(username='juan').email_verified)
+
+    # ── forgot password ──
+    def forgot(self, post, email='juan@example.com'):
+        self.client.post(reverse('forgot_password'), {'email': email})
+        codes = self.sent_codes(post)
+        return codes[-1] if codes else None
+
+    def test_forgot_password_full_flow(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.forgot(post)
+        self.assertEqual(post.call_args.kwargs['json']['template_params']['purpose_title'], 'Reset your password')
+        html = self.client.get(reverse('reset_password')).content.decode()
+        self.assertIn('data-open="reset"', html)
+        self.assertIn('ju***@example.com', html)
+        resp = self.client.post(reverse('reset_password'), {'code': code, 'password': 'Brand-new-9',
+                                                            'confirm_password': 'Brand-new-9'})
+        self.assertRedirects(resp, reverse('login'), fetch_redirect_response=False)
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.password.startswith('pbkdf2_'))
+        resp = self.client.post(reverse('login'), {'username': 'juan', 'password': 'Brand-new-9'})
+        self.assertRedirects(resp, reverse('customer_dashboard'), fetch_redirect_response=False)
+
+    def test_forgot_password_same_message_for_unknown_email(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            self.assertIsNone(self.forgot(post, 'nobody@example.com'))
+        html = self.client.get(reverse('reset_password')).content.decode()
+        self.assertIn('If an account uses no****@example.com, we sent it a 6-digit code.', html)
+        html = self.client.post(reverse('reset_password'), {'code': '123456', 'password': 'x', 'confirm_password': 'x'},
+                                follow=True).content.decode()
+        self.assertIn('That code is not correct.', html)
+
+    def test_reset_needs_matching_passwords_and_the_right_code(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.forgot(post)
+        html = self.client.post(reverse('reset_password'), {'code': code, 'password': 'a1', 'confirm_password': 'b2'},
+                                follow=True).content.decode()
+        self.assertIn('Passwords do not match.', html)
+        wrong = '000000' if code != '000000' else '111111'
+        self.client.post(reverse('reset_password'), {'code': wrong, 'password': 'a1', 'confirm_password': 'a1'})
+        self.customer.refresh_from_db()
+        self.assertTrue(check_password('Passw0rd!', self.customer.password))     # unchanged
+
+    def test_reset_also_confirms_an_unverified_email(self):
+        self.customer.email_verified = False
+        self.customer.save()
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(200, text='OK')) as post:
+            code = self.forgot(post)
+        self.client.post(reverse('reset_password'), {'code': code, 'password': 'N3w-pass', 'confirm_password': 'N3w-pass'})
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.email_verified)
+
+    def test_email_failure_is_reported(self):
+        with mock.patch('booking.services.emailjs.requests.post', return_value=fake_response(403, text='forbidden')):
+            html = self.client.post(reverse('register'), {
+                'firstname': 'Ana', 'lastname': 'Reyes', 'username': 'ana', 'email': 'ana@example.com',
+                'password': 'Xyz12345!', 'confirm_password': 'Xyz12345!'}, follow=True).content.decode()
+        self.assertIn('We could not send the code right now', html)
+        self.assertIn('Resend code', html)
+
+    def test_pages_need_a_pending_step(self):
+        self.assertRedirects(self.client.get(reverse('verify_email')), reverse('login'), fetch_redirect_response=False)
+        self.assertRedirects(self.client.get(reverse('reset_password')), reverse('forgot_password'),
+                             fetch_redirect_response=False)
+        html = self.client.get(reverse('login')).content.decode()
+        self.assertIn('Forgot password?', html)
