@@ -140,7 +140,8 @@
             <label>Name<input type="text" name="user_name" required></label>
             <label>Email<input type="email" name="user_email" required></label>
             <label>Message<textarea name="message" rows="4" required></textarea></label>
-            <button type="submit" class="btn btn-solid">Send message</button>
+            <button type="submit" class="btn btn-solid" id="contactSend">Send message</button>
+            <p class="contact-status" id="contactStatus" role="status" hidden></p>
         </form>
     </section>
 
@@ -274,23 +275,45 @@
 
     <script src="{% static 'js/user/landing.js' %}?v=3"></script>
     <script src="{% static 'js/user/chatbot.js' %}?v=1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script>
+        // Contact form: sent by our server, so no email keys are on this page
         (function () {
-            if (window.emailjs) emailjs.init("sg2NZyNrWExpAOvee");
+            const form = document.getElementById('contact-form');
+            const status = document.getElementById('contactStatus');
+            const button = document.getElementById('contactSend');
+            function csrf() {
+                const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+                if (m) return decodeURIComponent(m[1]);
+                const input = document.querySelector('input[name=csrfmiddlewaretoken]');
+                return input ? input.value : '';
+            }
+            function show(ok, text) {
+                status.hidden = false;
+                status.textContent = text;
+                status.classList.toggle('ok', ok);
+            }
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (!form.reportValidity()) return;
+                button.disabled = true;
+                button.textContent = 'Sending…';
+                fetch('{% url 'contact_message' %}', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify({
+                        name: form.user_name.value, email: form.user_email.value, message: form.message.value,
+                    }),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        show(!!data.ok, data.message || 'Something went wrong. Please try again.');
+                        if (data.ok) form.reset();
+                    })
+                    .catch(function () { show(false, 'Could not reach the server. Please try again.'); })
+                    .finally(function () { button.disabled = false; button.textContent = 'Send message'; });
+            });
         })();
-
-        document.getElementById("contact-form").addEventListener("submit", function (e) {
-            e.preventDefault();
-            if (!window.emailjs) { alert("Failed to send message. Try again."); return; }
-            emailjs.sendForm("service_lcf7euq", "template_pdev7yt", this)
-                .then(function () {
-                    alert("Message sent successfully!");
-                }, function (error) {
-                    alert("Failed to send message. Try again.");
-                    console.log(error);
-                });
-        });
     </script>
 </body>
 

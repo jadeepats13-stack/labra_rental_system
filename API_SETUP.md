@@ -248,27 +248,20 @@ The browser asks for camera permission the first time. Cameras work on `http://1
 - Customers who signed up before this feature are marked as confirmed automatically (migration `0007_email_verification`).
 - Admin accounts have no email, so "Forgot password" is for customers only.
 
-**Setup (EmailJS free plan allows 2 templates: booking + this one)**
-1. EmailJS dashboard → **Email Templates → Create New Template**.
-2. **Subject:** `{{purpose_title}} – Labra Basketball Court`
-3. **To Email** (Settings tab of the template): `{{to_email}}`
-4. **Content:**
-   ```
-   Hi {{customer_name}},
-
-   {{purpose_text}}
-
-   Your code: {{code}}
-
-   It expires in {{expires_minutes}} minutes. If you didn't ask for this, you can ignore this email.
-
-   Labra Basketball Court
-   ```
-5. Save, copy the **Template ID** (looks like `template_xxxxxxx`) and add it to `.env`:
+**Setup (EmailJS free plan allows 2 templates: the booking email + this "message" template)**
+The second template is a general one: it sends the 6-digit codes **and** the landing page contact form.
+1. EmailJS dashboard → **Email Templates → Create New Template** (or edit the code template you made earlier).
+2. **Subject:** `{{subject}}`
+3. **Content:** `{{{message}}}` (three braces, so line breaks show)
+4. Template **Settings**: **To Email** `{{to_email}}`, **Reply To** `{{reply_to}}`, **From Name** `Labra Basketball Court`
+5. Save, copy the **Template ID**, and add to `.env`:
    ```
    EMAILJS_CODE_TEMPLATE_ID=template_xxxxxxx
+   CONTACT_EMAIL=the-inbox-that-should-get-contact-messages@gmail.com
    ```
 6. Run `python manage.py migrate`, then restart the server.
+
+**Contact form:** messages are sent by our server (the old in-page EmailJS script is gone), to `CONTACT_EMAIL`, with Reply-To set to the visitor, so pressing Reply in Gmail answers them. Limit: 3 messages per visitor per hour.
 
 **Test it**
 1. Sign up with an email you can open. The pop-up asks for the code, and the email arrives (check Spam).

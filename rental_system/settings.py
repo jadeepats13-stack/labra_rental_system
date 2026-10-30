@@ -149,6 +149,8 @@ EMAILJS_PUBLIC_KEY  = os.environ.get('EMAILJS_PUBLIC_KEY', '')
 EMAILJS_PRIVATE_KEY = os.environ.get('EMAILJS_PRIVATE_KEY', '')
 # Second EmailJS template: 6-digit codes for email confirmation and password reset
 EMAILJS_CODE_TEMPLATE_ID = os.environ.get('EMAILJS_CODE_TEMPLATE_ID', '')
+# Inbox that receives the landing page contact form (sent with the template above)
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', '')
 
 # Google Calendar – approved bookings are added to the admin's calendar
 GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
