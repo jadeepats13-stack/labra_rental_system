@@ -88,3 +88,48 @@ def send_booking_confirmation(booking):
     logger.warning('EmailJS error %s: %s', response.status_code, response.text[:300])
     return False, 'We could not send your confirmation email right now.'
 
+
+# ─── Verification codes (sign-up confirmation and password reset) ───
+CODE_TEXT = {
+    'verify': ('Confirm your email', 'Use this code to confirm your email and finish creating your account.'),
+    'reset': ('Reset your password', 'Use this code to set a new password for your account.'),
+}
+
+
+def send_code_email(customer, code, purpose, minutes):
+    """
+    Email a 6-digit code using the "verification code" template
+    (EMAILJS_CODE_TEMPLATE_ID). Template variables:
+        {{to_email}}, {{customer_name}}, {{code}}, {{purpose_title}},
+        {{purpose_text}}, {{expires_minutes}}
+    Returns (sent: bool, message: str).
+    """
+    required = [settings.EMAILJS_SERVICE_ID, getattr(settings, 'EMAILJS_CODE_TEMPLATE_ID', ''),
+                settings.EMAILJS_PUBLIC_KEY, settings.EMAILJS_PRIVATE_KEY]
+    if not all(required):
+        return False, 'Email codes are not set up yet. Please contact the court.'
+
+    title, text = CODE_TEXT[purpose]
+    payload = {
+        'service_id': settings.EMAILJS_SERVICE_ID,
+        'template_id': settings.EMAILJS_CODE_TEMPLATE_ID,
+        'user_id': settings.EMAILJS_PUBLIC_KEY,
+        'accessToken': settings.EMAILJS_PRIVATE_KEY,
+        'template_params': {
+            'to_email': customer.email,
+            'customer_name': f'{customer.firstname} {customer.lastname}'.strip(),
+            'code': code,
+            'purpose_title': title,
+            'purpose_text': text,
+            'expires_minutes': minutes,
+        },
+    }
+    try:
+        response = requests.post(SEND_URL, json=payload, timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as exc:
+        logger.warning('EmailJS code request failed: %s', exc)
+        return False, 'We could not send the code right now. Please try again in a minute.'
+    if response.status_code == 200:
+        return True, 'Code sent.'
+    logger.warning('EmailJS code error %s: %s', response.status_code, response.text[:300])
+    return False, 'We could not send the code right now. Please try again in a minute.'

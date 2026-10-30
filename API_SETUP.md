@@ -237,3 +237,42 @@ The browser asks for camera permission the first time. Cameras work on `http://1
 - Google gives a small free daily quota that changes over time. Check your limits in AI Studio.
 - On the free tier, Google may use chat messages to improve its products, so the chatbot never asks visitors for personal information.
 - If PythonAnywhere is used for hosting, `generativelanguage.googleapis.com` is allowed for free accounts (`.googleapis.com` is on its allowlist).
+
+## 11. Email confirmation and forgot password (EmailJS codes)
+
+**How it works**
+- After **Sign up**, the account is created but **cannot log in yet**. A **6-digit code** is emailed, and the pop-up asks for it. The right code confirms the email and logs the customer in.
+- Logging in with an unconfirmed account sends a new code and opens the same step.
+- **Forgot password?** (in the Log in pop-up) asks for the email, sends a 6-digit code, then asks for the code and a new password. The message is the same whether or not an account uses that email, so nobody can check who has an account.
+- Codes: valid **10 minutes**, used **once**, **5 wrong tries** then a new code is needed. **Resend** after 60 seconds, at most 5 codes per hour. Codes are stored **hashed**.
+- Customers who signed up before this feature are marked as confirmed automatically (migration `0007_email_verification`).
+- Admin accounts have no email, so "Forgot password" is for customers only.
+
+**Setup (EmailJS free plan allows 2 templates: booking + this one)**
+1. EmailJS dashboard → **Email Templates → Create New Template**.
+2. **Subject:** `{{purpose_title}} – Labra Basketball Court`
+3. **To Email** (Settings tab of the template): `{{to_email}}`
+4. **Content:**
+   ```
+   Hi {{customer_name}},
+
+   {{purpose_text}}
+
+   Your code: {{code}}
+
+   It expires in {{expires_minutes}} minutes. If you didn't ask for this, you can ignore this email.
+
+   Labra Basketball Court
+   ```
+5. Save, copy the **Template ID** (looks like `template_xxxxxxx`) and add it to `.env`:
+   ```
+   EMAILJS_CODE_TEMPLATE_ID=template_xxxxxxx
+   ```
+6. Run `python manage.py migrate`, then restart the server.
+
+**Test it**
+1. Sign up with an email you can open. The pop-up asks for the code, and the email arrives (check Spam).
+2. Type a wrong code: it says how many tries are left. Paste the right code: you are logged in.
+3. Log out, click **Log in → Forgot password?**, enter the same email, use the code and a new password, then log in with it.
+
+The free EmailJS plan has **200 emails per month**, shared by booking emails, the contact form and these codes.
