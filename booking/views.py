@@ -619,7 +619,7 @@ def admin_login(request):
     request.session['admin_id'] = admin.admin_id
     request.session.set_expiry(86400)  # 24 hours
  
-    messages.success(request, f'Welcome, Admin {admin.firstname}!')
+    messages.success(request, f'Welcome back, {admin.firstname}!')
     return redirect('admin_dashboard')
 
 def get_logged_in_admin(request):

@@ -1212,7 +1212,9 @@ input[type="file"].form-control::file-selector-button {
     box-shadow: var(--shadow-sm);
     transition: opacity 0.3s ease;
     width: fit-content;   
-    max-width: 100%;   
+    max-width: 100%;
+    width: fit-content;
+    max-width: 100%;
 }
 
 .alert .icon {
