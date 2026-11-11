@@ -7,7 +7,8 @@
  * Each interface keeps its own key, so admin and customer choices are independent.
  *
  * Clicking the button fades the whole page to the other theme (about 0.3 s):
- *   - browsers with the View Transitions API cross-fade the page in one piece;
+ *   - browsers with the View Transitions API cross-fade the page in one piece
+ *     (except glass pages, which use the CSS fade below);
  *   - other browsers fade colours, backgrounds and borders with CSS transitions.
  * People who turned on "reduce motion" get an instant switch.
  */
@@ -42,7 +43,9 @@
     }
 
     function switchSmoothly(theme) {
-        if (document.startViewTransition) {
+        // Glass pages use the CSS fade: snapshotting the blurred glass layers
+        // for a View Transition delays the switch by over a second.
+        if (document.startViewTransition && !document.body.classList.contains('glass-ui')) {
             document.startViewTransition(function () { setTheme(theme); });
             return;
         }

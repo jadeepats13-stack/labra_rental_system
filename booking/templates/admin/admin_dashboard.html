@@ -11,11 +11,12 @@
     <link rel="stylesheet" href="{% static 'css/common/table_filter.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin/admin_schedule.css' %}?v=3">
     <link rel="stylesheet" href="{% static 'css/admin/admin_checkin.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/common/glass.css' %}?v=4">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
 </head>
 
-<body>
+<body class="glass-ui">
 
     {# Icon sprite (Lucide-style, 24px grid, 1.75 stroke). Use: <svg class="icon"><use href="#i-name"/></svg> #}
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -1189,7 +1190,7 @@
             </main>
         </div>
     </div>
-    <script src="{% static 'js/common/theme_toggle.js' %}?v=3"></script>
+    <script src="{% static 'js/common/theme_toggle.js' %}?v=4"></script>
     <script src="{% static 'js/admin/admin_dashbo.js' %}?v=3"></script>
     <script src="{% static 'vendor/fullcalendar/index.global.min.js' %}"></script>
     <script src="{% static 'js/common/table_filter.js' %}"></script>
@@ -1200,4 +1201,4 @@
 
 </body>
 
-</html>
+</html>

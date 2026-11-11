@@ -1,0 +1,431 @@
+/*
+ * Glass UI layer (glassmorphism) for the landing page, customer pages and admin panel.
+ *
+ * Loaded LAST on each page and switched on with <body class="glass-ui">.
+ * Only colours, surfaces and motion change here: no layout, no features.
+ *   - Dark theme (and the landing page, which is always dark): smoked glass.
+ *   - Light theme: frosted white glass; the admin sidebar stays dark glass.
+ * Motion is gentle and turns off for "reduce motion". Phones get a lighter blur.
+ */
+
+/* ── Tokens ─────────────────────────────────────────────── */
+body.glass-ui {
+    --g-panel: linear-gradient(140deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.035) 100%);
+    --g-panel-strong: linear-gradient(140deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
+    --g-bar: rgba(12, 13, 18, 0.42);
+    --g-border: rgba(255, 255, 255, 0.13);
+    --g-border-hover: rgba(255, 255, 255, 0.26);
+    --g-shadow: 0 10px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    --g-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --g-field: rgba(255, 255, 255, 0.06);
+    --g-field-border: rgba(255, 255, 255, 0.14);
+    --g-head: rgba(255, 255, 255, 0.05);
+    --g-line: rgba(255, 255, 255, 0.07);
+    --g-blur: blur(22px) saturate(165%);
+    --g-base: #07080b;
+    --g-photo-filter: blur(34px) saturate(150%) brightness(0.78);
+    --g-photo-opacity: 1;
+    --g-glow-a: rgba(249, 115, 22, 0.42);
+    --g-glow-b: rgba(59, 130, 246, 0.34);
+    --g-glow-c: rgba(168, 85, 247, 0.16);
+    --g-veil: linear-gradient(180deg, rgba(7, 8, 11, 0.25), rgba(7, 8, 11, 0.58));
+    --g-today: linear-gradient(140deg, rgba(249, 115, 22, 0.30), rgba(249, 115, 22, 0.08));
+    --g-scrim: rgba(7, 8, 11, 0.38);
+    --g-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root[data-theme="light"] body.glass-ui {
+    --g-panel: linear-gradient(140deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.50) 100%);
+    --g-panel-strong: linear-gradient(140deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.62) 100%);
+    --g-bar: rgba(255, 255, 255, 0.50);
+    --g-border: rgba(255, 255, 255, 0.85);
+    --g-border-hover: rgba(255, 255, 255, 1);
+    --g-shadow: 0 10px 34px rgba(31, 41, 55, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --g-shadow-hover: 0 16px 44px rgba(31, 41, 55, 0.16), inset 0 1px 0 #ffffff;
+    --g-field: rgba(255, 255, 255, 0.66);
+    --g-field-border: rgba(15, 23, 42, 0.12);
+    --g-head: rgba(255, 255, 255, 0.50);
+    --g-line: rgba(15, 23, 42, 0.07);
+    --g-base: #eef1f6;
+    --g-photo-filter: blur(46px) saturate(140%) brightness(1.35) contrast(0.85);
+    --g-photo-opacity: 0.55;
+    --g-glow-a: rgba(251, 146, 60, 0.40);
+    --g-glow-b: rgba(96, 165, 250, 0.38);
+    --g-glow-c: rgba(196, 181, 253, 0.34);
+    --g-veil: linear-gradient(180deg, rgba(248, 250, 252, 0.55), rgba(241, 245, 249, 0.75));
+    --g-today: linear-gradient(140deg, rgba(251, 146, 60, 0.35), rgba(255, 255, 255, 0.55));
+    --g-scrim: rgba(241, 245, 249, 0.40);
+}
+
+/* ── Backdrop: the court photo, blurred, with slowly drifting light ── */
+body.glass-ui {
+    background: var(--g-base) !important;
+    isolation: isolate;
+}
+
+body.glass-ui::before,
+body.glass-ui::after {
+    content: '';
+    position: fixed;
+    pointer-events: none;
+}
+
+body.glass-ui::before {
+    inset: -80px;
+    z-index: -2;
+    background: url('../../images/c1.png') center / cover no-repeat;
+    filter: var(--g-photo-filter);
+    opacity: var(--g-photo-opacity);
+}
+
+body.glass-ui::after {
+    inset: -10%;
+    z-index: -1;
+    background:
+        radial-gradient(42rem 30rem at 10% 4%, var(--g-glow-a), transparent 60%),
+        radial-gradient(40rem 28rem at 96% 96%, var(--g-glow-b), transparent 62%),
+        radial-gradient(30rem 22rem at 68% 22%, var(--g-glow-c), transparent 60%),
+        var(--g-veil);
+    animation: g-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes g-drift {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(2%, -1.5%, 0) scale(1.04); }
+    100% { transform: translate3d(-2%, 1.5%, 0) scale(1.02); }
+}
+
+/* Page areas let the backdrop show through */
+body.glass-ui :is(.main-content, .page-content, .main, .content, .layout, .flash-area) {
+    background: transparent !important;
+}
+
+/* ── Glass surfaces ───────────────────────────────────── */
+body.glass-ui :is(
+    /* customer */
+    .stat-card, .week-day, .ticket, .la-court-card, .lb-card, .card, .form-card, .reminder,
+    .table-wrap, .qr-modal-card, .step-card, .court-preview-card, .slot-board, .profile-avatar-card,
+    .booking-details-card, .booking-summary, .payment-card, .instructions-card, .summary-card,
+    /* admin */
+    .section, .ci-card, .ci-session, .modal,
+    /* landing */
+    .scoreboard, .steps li, .reach-card, .auth-card, .cb-panel,
+    /* small chips in the bars */
+    .date-badge, .theme-toggle
+) {
+    background: var(--g-panel) !important;
+    -webkit-backdrop-filter: var(--g-blur);
+    backdrop-filter: var(--g-blur);
+    border: 1px solid var(--g-border) !important;
+    box-shadow: var(--g-shadow) !important;
+}
+
+/* Top bars and the sidebar: lighter glass, no heavy shadow */
+body.glass-ui :is(.top-bar, .header, .nav, .sidebar) {
+    background: var(--g-bar) !important;
+    -webkit-backdrop-filter: var(--g-blur);
+    backdrop-filter: var(--g-blur);
+    box-shadow: none !important;
+}
+
+body.glass-ui :is(.top-bar, .header, .nav) {
+    border-bottom: 1px solid var(--g-border) !important;
+}
+
+body.glass-ui .sidebar {
+    border-right: 1px solid var(--g-border) !important;
+}
+
+/* The admin sidebar has white text in both themes: keep it dark glass */
+body.glass-ui .layout .sidebar,
+:root[data-theme="light"] body.glass-ui .layout .sidebar {
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.70)) !important;
+    border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root:not([data-theme="light"]) body.glass-ui .layout .sidebar {
+    background: rgba(12, 13, 18, 0.45) !important;
+}
+
+/* Softer, rounder cards */
+body.glass-ui :is(.stat-card, .week-day, .ticket, .la-court-card, .section, .card, .lb-card, .reach-card,
+    .steps li, .scoreboard, .ci-card, .step-card, .court-preview-card, .booking-details-card,
+    .booking-summary, .payment-card, .instructions-card) {
+    border-radius: 18px !important;
+}
+
+/* Tables inside a glass card stay clear */
+body.glass-ui .section :is(.table-wrap, .data-table),
+body.glass-ui .card .table-wrap {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+body.glass-ui :is(thead, thead tr, thead th) {
+    background: var(--g-head) !important;
+}
+
+body.glass-ui :is(td, th) {
+    border-color: var(--g-line) !important;
+}
+
+/* Fields */
+body.glass-ui :is(.form-control, .form-input, .form-select, .ci-code-input, input[type="text"],
+    input[type="email"], input[type="password"], input[type="date"], input[type="search"], select, textarea) {
+    background-color: var(--g-field) !important;
+    border-color: var(--g-field-border) !important;
+}
+
+/* Alerts and pills keep their colour, on frosted glass */
+body.glass-ui .alert {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+}
+
+/* Highlights keep the brand colours */
+body.glass-ui :is(.week-day.today, .week-day.is-today) {
+    background: var(--g-today) !important;
+    border-color: rgba(249, 115, 22, 0.55) !important;
+}
+
+body.glass-ui .ticket-stub {
+    background: linear-gradient(160deg, rgba(249, 115, 22, 0.92), rgba(234, 88, 12, 0.78)) !important;
+}
+
+body.glass-ui :is(.nav-item.active, .nav-link.active) {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 6px 18px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Pop-ups: the page behind blurs instead of going black */
+body.glass-ui :is(.auth-overlay, .modal-overlay, .qr-modal) {
+    background: var(--g-scrim) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+body.glass-ui :is(.auth-card, .modal, .qr-modal-card) {
+    background: var(--g-panel-strong) !important;
+    border-radius: 22px !important;
+}
+
+body.glass-ui .auth-tabs {
+    background: var(--g-field) !important;
+}
+
+/* Landing hero: lighter veil so the photo glows behind the glass */
+body.glass-ui .hero::after {
+    background: linear-gradient(90deg, rgba(7, 8, 11, 0.78), rgba(7, 8, 11, 0.25)) !important;
+}
+
+/* ── Motion ───────────────────────────────────────────── */
+
+/* Content rises in when a page or section opens */
+@keyframes g-rise {
+    from { opacity: 0; transform: translate3d(0, 14px, 0); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes g-pop {
+    from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+body.glass-ui :is(.page-content.active, .page.active) > :not(.modal-overlay, .qr-modal, [hidden]) {
+    animation: g-rise 0.55s var(--g-ease) backwards;
+}
+
+body.glass-ui :is(.page-content.active, .page.active) > *:nth-child(2) { animation-delay: 0.05s; }
+body.glass-ui :is(.page-content.active, .page.active) > *:nth-child(3) { animation-delay: 0.10s; }
+body.glass-ui :is(.page-content.active, .page.active) > *:nth-child(4) { animation-delay: 0.15s; }
+body.glass-ui :is(.page-content.active, .page.active) > *:nth-child(5) { animation-delay: 0.20s; }
+body.glass-ui :is(.page-content.active, .page.active) > *:nth-child(n+6) { animation-delay: 0.25s; }
+
+/* Cards in a row arrive one after another */
+body.glass-ui :is(.page-content.active, .page.active) :is(.week-strip, .stats-grid, .stats-row) > * {
+    animation: g-rise 0.5s var(--g-ease) backwards;
+}
+
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(1) { animation-delay: 0.10s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(2) { animation-delay: 0.15s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(3) { animation-delay: 0.20s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(4) { animation-delay: 0.25s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(5) { animation-delay: 0.30s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(6) { animation-delay: 0.35s; }
+body.glass-ui :is(.week-strip, .stats-grid, .stats-row) > *:nth-child(7) { animation-delay: 0.40s; }
+
+/* Landing hero and sections */
+body.glass-ui .hero-copy > *,
+body.glass-ui .scoreboard {
+    animation: g-rise 0.7s var(--g-ease) backwards;
+}
+
+body.glass-ui .hero-copy > *:nth-child(2) { animation-delay: 0.10s; }
+body.glass-ui .hero-copy > *:nth-child(3) { animation-delay: 0.20s; }
+body.glass-ui .scoreboard { animation-delay: 0.30s; }
+
+/* Pop-ups pop in */
+body.glass-ui .auth-overlay:not([hidden]) .auth-card,
+body.glass-ui .modal-overlay.open .modal,
+body.glass-ui .qr-modal:not([hidden]) .qr-modal-card {
+    animation: g-pop 0.32s var(--g-ease) backwards;
+}
+
+/* Hover: cards lift and the glass catches the light */
+body.glass-ui :is(.stat-card, .week-day, .reach-card, .steps li, .la-court-card, .ci-session) {
+    transition: transform 0.25s var(--g-ease), box-shadow 0.25s var(--g-ease), border-color 0.25s var(--g-ease) !important;
+}
+
+body.glass-ui :is(.stat-card, .week-day, .reach-card, .steps li, .la-court-card, .ci-session):hover {
+    transform: translateY(-3px);
+    border-color: var(--g-border-hover) !important;
+    box-shadow: var(--g-shadow-hover) !important;
+}
+
+/* Main buttons glow softly and lift */
+body.glass-ui :is(.btn-primary, .btn-solid, .header-action, .top-bar-action) {
+    box-shadow: 0 8px 22px rgba(249, 115, 22, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    transition: transform 0.2s var(--g-ease), box-shadow 0.2s var(--g-ease), background-color 0.2s ease !important;
+}
+
+body.glass-ui .layout :is(.btn-primary, .header-action) {
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+body.glass-ui :is(.btn-primary, .btn-solid, .header-action, .top-bar-action):hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+/* Notification badges breathe gently */
+@keyframes g-breathe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+}
+
+body.glass-ui .nav-badge:not([hidden]) {
+    animation: g-breathe 2.6s ease-in-out infinite;
+}
+
+/* ── Phones and older browsers ─────────────────────────── */
+@media (max-width: 640px) {
+    body.glass-ui { --g-blur: blur(12px) saturate(150%); }
+    body.glass-ui::after { animation: none; }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    body.glass-ui { --g-panel: rgba(24, 26, 34, 0.92); --g-bar: rgba(16, 17, 22, 0.94); --g-panel-strong: rgba(28, 30, 38, 0.96); }
+    :root[data-theme="light"] body.glass-ui { --g-panel: rgba(255, 255, 255, 0.94); --g-bar: rgba(255, 255, 255, 0.96); --g-panel-strong: #ffffff; }
+}
+
+/* ── Reduce motion: everything still, nothing missing ──── */
+@media (prefers-reduced-motion: reduce) {
+    body.glass-ui::after,
+    body.glass-ui *,
+    body.glass-ui *::before,
+    body.glass-ui *::after {
+        animation: none !important;
+    }
+
+    body.glass-ui :is(.stat-card, .week-day, .reach-card, .steps li, .la-court-card, .ci-session):hover,
+    body.glass-ui :is(.btn-primary, .btn-solid, .header-action, .top-bar-action):hover {
+        transform: none;
+    }
+}
+
+/* Book Court: the time-slot board is a glass card of its own,
+   so give it the same rounded corners and inner spacing as the other cards */
+body.glass-ui .slot-board {
+    border-radius: var(--radius-lg, 16px);
+    padding: var(--space-5, 20px);
+    gap: var(--space-3, 12px);
+    margin-top: var(--space-2, 8px);
+}
+body.glass-ui .slot-board .slot-grid {
+    margin-top: 0;
+    gap: var(--space-2, 8px);
+}
+body.glass-ui .slot-board .slot-hint,
+body.glass-ui .slot-board .form-hint {
+    margin: 0;
+}
+@media (max-width: 640px) {
+    body.glass-ui .slot-board { padding: var(--space-4, 16px); }
+}
+
+/* ── Landing: How it works / The court / Questions ──────────
+   Each section is its own glass card with even spacing around and inside it */
+body.glass-ui :is(#how, #court, #contact).section {
+    width: min(var(--max, 1180px), calc(100% - 40px));
+    margin: 28px auto;
+    padding: 48px;
+    border-radius: 24px !important;
+}
+body.glass-ui #how.section { margin-top: 56px; }
+body.glass-ui #contact.section { margin-bottom: 56px; border-top: 1px solid var(--g-border) !important; }
+body.glass-ui :is(#how, #court, #contact).section h2 { margin: 0 0 28px; line-height: 1; }
+
+/* Step cards: padding inside, number and text lined up */
+body.glass-ui #how .steps { gap: 20px; }
+body.glass-ui #how .steps li {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+body.glass-ui #how .steps li::before { margin-bottom: 14px; }
+body.glass-ui #how .steps h3 { margin: 0 0 8px; }
+
+/* The court: text and photos centred against each other, matching corners */
+body.glass-ui #court.section { gap: 40px; align-items: center; }
+body.glass-ui #court .court-text h2 { margin-bottom: 20px; }
+body.glass-ui #court .facts div:last-child { border-bottom: 0; padding-bottom: 0; }
+body.glass-ui #court .gallery { gap: 12px; }
+body.glass-ui #court .gallery img { border-radius: 16px; }
+
+/* Questions: heading lined up with the contact cards */
+body.glass-ui #contact.section { gap: 40px; align-items: start; }
+body.glass-ui #contact .reach { gap: 12px; }
+body.glass-ui #contact .reach-card { padding: 18px 20px; border-radius: 16px !important; }
+
+@media (max-width: 960px) {
+    body.glass-ui :is(#how, #court, #contact).section { padding: 36px 32px; }
+    body.glass-ui :is(#court, #contact).section { gap: 28px; }
+}
+@media (max-width: 520px) {
+    body.glass-ui :is(#how, #court, #contact).section {
+        width: calc(100% - 24px);
+        margin: 16px auto;
+        padding: 28px 20px;
+        border-radius: 20px !important;
+    }
+    body.glass-ui #how.section { margin-top: 32px; }
+    body.glass-ui #contact.section { margin-bottom: 32px; }
+    body.glass-ui #how .steps { gap: 12px; }
+    body.glass-ui #how .steps li { padding: 20px; }
+}
+
+/* Profile card (admin and customer): same rounded corners as the other cards,
+   with room around the initials and the name */
+body.glass-ui .profile-avatar-card {
+    border-radius: 18px !important;
+}
+body.glass-ui .layout .profile-avatar-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 32px 24px;
+}
+body.glass-ui .layout .profile-avatar-card .profile-avatar-circle {
+    margin: 0 0 10px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 900px) {
+    body.glass-ui .layout .profile-avatar-card {
+        flex-direction: row;
+        gap: 16px;
+        padding: 20px;
+    }
+    body.glass-ui .layout .profile-avatar-card .profile-avatar-circle { margin: 0; }
+}

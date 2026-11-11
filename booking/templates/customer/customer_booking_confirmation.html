@@ -11,9 +11,10 @@
         href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
     <link rel="stylesheet" href="{% static 'css/customer/customer_base.css' %}?v=7">
     <link rel="stylesheet" href="{% static 'css/customer/customer_booking_confirmatio.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/common/glass.css' %}?v=4">
 </head>
 
-<body>
+<body class="glass-ui">
     {% include 'customer/customer_icons.html' %}
     <a class="skip-link" href="#mainContent">Skip to main content</a>
     {% include 'customer/customer_sidebar.html' with active_page='bookings' %}
@@ -190,7 +191,7 @@
     <script
         src="https://www.paypal.com/sdk/js?client-id=BAAA7G0GrqAIQjYHzMO0OlAkAPLMoUaSkqTdoM0akdAOrgWKu3pXIAuqFNt74KUh-umLzDdvFCRL7fZGz8&currency=PHP"></script>
     <script src="{% static 'js/customer/customer_booking_confirmation.js' %}?v=2"></script>
-    <script src="{% static 'js/common/theme_toggle.js' %}?v=3"></script>
+    <script src="{% static 'js/common/theme_toggle.js' %}?v=4"></script>
     <script src="{% static 'js/customer/customer_ui.js' %}?v=1"></script>
 
 </body>
